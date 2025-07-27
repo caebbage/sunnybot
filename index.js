@@ -1,0 +1,62 @@
+
+require('dotenv').config({silent: process.env.NODE_ENV === 'production'});
+
+const Discord = require("discord.js"),
+  client = new Discord.Client({
+    intents: 46595,
+    partials: ['MESSAGE', 'CHANNEL', 'REACTION']
+  }),
+  { promisify } = require("util"),
+  readdir = promisify(require("fs").readdir);
+
+  client.commands = new Discord.Collection();
+  client.orders = new Discord.Collection();
+  require("./module/sheets.js")(client);
+
+const init = async () => {
+  // load events
+  const eventFiles = await readdir("./event/");
+  console.log(`Loading a total of ${eventFiles.length} events.`);
+  eventFiles.forEach(file => {
+    const event = require(`./event/${file}`);
+    console.log(`  [event] ${event.name}`);
+    // Bind the client to any event, before the existing arguments
+    // provided by the discord.js event. 
+    if (event.once) {
+      client.once(event.name, (...args) => event.execute (...args));
+    } else {
+      client.on(event.name, (...args) => event.execute (...args));
+    }
+  });
+
+  // register orders (prefix commands)
+  const orderFiles = (await readdir("./order/")).filter(f => f.endsWith(".js"));
+  console.log(`Loading a total of ${orderFiles.length} orders.`)
+  orderFiles.forEach(file => {
+    const order = require('./order/' + file);
+    if ('name' in order && 'execute' in order) {
+      client.orders.set(order.name, order);
+      console.log(`  [order] ${order.name}`)
+    } else {
+      console.log(`  [WARN] ${file} action data incomplete.`)
+    }
+  });
+
+  // register commands
+  const commandFiles = (await readdir("./command/")).filter(f => f.endsWith(".js"));
+  console.log(`Loading a total of ${commandFiles.length} commands.`)
+  commandFiles.forEach(file => {
+    const command = require('./command/' + file);
+    if ('data' in command && 'execute' in command) {
+      client.commands.set(command.data.name, command);
+      console.log(`  [command] ${command.data.name}`)
+    } else {
+      console.log(`  [WARN] ${file} command data incomplete.`)
+    }
+  });
+  
+
+  client.login(process.env.DISCORD_CLIENT_TOKEN);
+};
+
+init();

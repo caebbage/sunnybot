@@ -1,57 +1,204 @@
-function userEmbed(profile, user) {
+const fuzzy = require("fuzzy");
+
+async function userEmbed(profile, client) {
   return {
-    title: user.client.config("poke_symbol") + " " + profile.get("display_name"),
-    description: "**`    PRONOUNS `** " + profile.get("pronouns")
-      + "\n**`    TIMEZONE `** " + profile.get("timezone")
-      + "\n**`       MONEY `** " + user.client.config("money_symbol") + profile.get("money"),
-    thumbnail: {
-      url: profile.get("display_icon")
-    },
-    color: color(user.client.config("default_color")),
+    title: client.config("decorative_symbol") + " " + profile.get("display_name").toUpperCase(),
+    description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0"),
+    color: color(client.config("default_color")),
     footer: {
-      text: "@" + user.username
+      text: "@" + (await client.users.fetch(profile.get("user_id"))).username
+        + " ✦ " + (profile.get("pronouns") || "N/A")
+        + " ✦ " + (profile.get("timezone") || "GMT +?")
     }
   }
 }
 
-function charaEmbed(chara, user) {
+function charaEmbed(chara, client) {
+  const faction = client.db.factions.find(x => x.get("faction_name") == chara.get("faction"));
+  let turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"))
+
+  let bonuses = sumBonus(turfs);
+
+  let stats = {
+    hot: (!isNaN(+chara.get("hot")) ? +chara.get("hot") : 0) + bonuses.hot + (!isNaN(+faction.get("hot")) ? +faction.get("hot") : 0),
+    cool: (!isNaN(+chara.get("cool")) ? +chara.get("cool") : 0) + bonuses.cool + (!isNaN(+faction.get("cool")) ? +faction.get("cool") : 0),
+    hard: (!isNaN(+chara.get("hard")) ? +chara.get("hard") : 0) + bonuses.hard + (!isNaN(+faction.get("hard")) ? +faction.get("hard") : 0),
+    sharp: (!isNaN(+chara.get("sharp")) ? +chara.get("sharp") : 0) + bonuses.sharp + (!isNaN(+faction.get("sharp")) ? +faction.get("sharp") : 0)
+  }
+
   return {
-    title: user.client.config("poke_symbol") + " " + chara.get("chara_name"),
+    title: (faction.get("pin_emoji") || faction.get("simple_emoji")) + " " + chara.get("full_name").toUpperCase(),
     url: chara.get("app"),
-    description: "**`   FULL NAME `** " + chara.get("fullname")
-      + "\n**`         AGE `** " + chara.get("age")
-      + "\n**`      HEIGHT `** " + chara.get("height")
-      + "\n**`    PRONOUNS `** " + chara.get("pronouns")
-      + "\n**`     PARTNER `** " + chara.get("partner")
+    description: "-# " + [
+      chara.get("rank").replace(/^(.+) (.+)$/, "$1 `$2`") +
+      ` of the \`${chara.get("family").toUpperCase()}\` Family`,
+      `\`${chara.get("pronouns")}\``,
+      `\`${chara.get("height")}\``
+    ].join(" ✦ ")
 
-      + `\n\n${chara.get("description").split("\n").map(x => `> ${x}`).join("\n")}\n\n`
-
-      + (chara.get("is_npc").toLowerCase() !== "true" ?
-        "**`       LEVEL `** " + `${level(chara.get("xp_points"))} (${chara.get("xp_points")}${user.client.config("xp_symbol")})`
-        + (chara.get("challenge_completed") ? "\n# " +
-          user.client.db.challenges.data.filter((chal) =>
-            chara.get("challenge_completed").split(", ").includes(chal.get("challenge_id")) && chal.get("badge")
-          ).map(chal => chal.get("badge"))
-          : "")
-        : ""),
-
-    color: color(user.client.config("default_color")),
+      + `\n\n> **ⓘ STATUS** ➜ \`${chara.get("status").toUpperCase()}\``
+      + (chara.get("flavor_text")
+        ? "\n" + chara.get("flavor_text").split("\n").map(x => `> ${x}`).join("\n")
+        : "")
+      + `\n\n\`   REP \` ${chara.get("reputation")}\n\`  HEAT \` ${chara.get("heat")}/5`
+      + "\n\n```ansi\n"
+      + colorStats(arrayChunks(["hot", "cool", "hard", "sharp"].map(stat =>
+        pad(`${pad(stat.toUpperCase(), 5)} ${stats[stat] >= 0 ? "+" : ""}${stats[stat]}`, 15, " ", true)
+      ), 2).map(x => x.join("")).join("\n"))
+      + "```"
+      + "\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) + "\n\n" + turfBonus(faction, client) + "```"
+      + "\n-# Stat bonuses are already added to the stats block."
+    ,
+    color: color(faction.get("main_color") || client.config("default_color")),
     thumbnail: {
-      url: chara.get("icon") || user.client.config("default_image")
+      url: faction.get("crest_image")
     },
     image: {
       url: chara.get("card") || undefined
-    }
+    },
+    footer: {
+      "text": "SUNNY CANTILADOS",
+      "icon_url": client.config("default_image")
+    },
   }
 }
 
-function inventoryEmbed(profile, user) {
+function factionEmbed(faction, client) {
   return {
-    title: user.client.config("poke_symbol") + " INVENTORY",
-    description: (profile.get("inventory") ? profile.get("inventory") : "-# You appear to have no items!"),
-    color: color(user.client.config("default_color")),
+    title: (faction.get("pin_emoji") || faction.get("simple_emoji")) + " THE " + faction.get("faction_name").toUpperCase(),
+    description:
+      `> **ⓘ STATUS** ➜ \`${faction.get("status").toUpperCase()}\` ✦ \`TIER\` ${faction.get("tier")}`
+      + `\n> Based in ${faction.get("based")}.`
+      + `\n> ♔ *${faction.get("leader")}*`
+      + `\n\n👤\` MEMBERS ✦ \` ${client.db.charas.filter(x => x.get("chara_name") && x.get("faction") == faction.get("faction_name")).length}`
+      + `\n📍\` HEXES OWNED ✦ \` ${client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")).length}/99`
+      + `\n💳\` FUNDS ✦ \` ${faction.get("funds")}`
+      + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) + "\n\n" + turfBonus(faction, client) + "```"
+    ,
+    color: color(faction.get("main_color") || client.config("default_color")),
     thumbnail: {
-      url: user.client.config("default_image")
+      url: faction.get("crest_image")
+    },
+    footer: {
+      "text": "SUNNY CANTILADOS",
+      "icon_url": client.config("default_image")
+    },
+  }
+}
+
+function factionBonus(faction) {
+  let res = `[2;37m【 [1;${faction.get("ansi_color")}m${faction.get("faction_name").toUpperCase()} ${faction.get("simple_emoji")} [0m[2;37mTier ${faction.get("tier").toUpperCase()} 】:[0m `;
+
+  if (faction.get("hot")) res += `\n[2;37m  ‣[2;30m ❰ HOT +${faction.get("hot")} ❱[0m`;
+  if (faction.get("cool")) res += `\n[2;37m  ‣[2;30m ❰ COOL +${faction.get("cool")} ❱[0m`;
+  if (faction.get("hard")) res += `\n[2;37m  ‣[2;30m ❰ HARD +${faction.get("hard")} ❱[0m`;
+  if (faction.get("sharp")) res += `\n[2;37m  ‣[2;30m ❰ SHARP +${faction.get("sharp")} ❱[0m`;
+  if (faction.get("misc_bonus")) res += "\n" + faction.get("misc_bonus").split("\n").map(x => `[2;37m  ‣[0m` + x).join("\n")
+
+  return res
+}
+
+function sumBonus(turfs) {
+  let bonuses = { hot: 0, cool: 0, hard: 0, sharp: 0, other: {} };
+  turfs.forEach(turf => {
+    ["hot", "cool", "hard", "sharp"].forEach(stat => {
+      bonuses[stat] += turf.get(stat) && !isNaN(+turf.get(stat)) ? +turf.get(stat) : 0
+    })
+
+    turf.get("misc_bonus")?.split("\n").filter(x => x).forEach(bonus => {
+      if (bonuses.other[bonus]) bonuses.other[bonus]++
+      else bonuses.other[bonus] = 1
+    })
+  })
+  return bonuses
+}
+
+function turfBonus(faction, client) {
+  let turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"))
+
+  let bonuses = sumBonus(turfs);
+
+  let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${turfs.length}[0m[2;37m turfs:[0m`
+
+  if (bonuses.hot) res += `\n[2;37m  ‣[2;30m ❰ HOT +${bonuses.hot} ❱[0m`
+  if (bonuses.cool) res += `\n[2;37m  ‣[2;30m ❰ COOL +${bonuses.cool} ❱[0m`
+  if (bonuses.hard) res += `\n[2;37m  ‣[2;30m ❰ HARD +${bonuses.hard} ❱[0m`
+  if (bonuses.sharp) res += `\n[2;37m  ‣[2;30m ❰ SHARP +${bonuses.sharp} ❱[0m`
+
+  if ((Object.keys(bonuses.other).length)) {
+    res += "\n" + Object.entries(bonuses.other).map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
+  }
+
+  return res
+}
+
+function hexList(client, faction) {
+  let turfs = client.db.turf.filter(x => x.get("turf_id"));
+  let factions = client.db.factions.filter(x => x.get("faction_name"));
+
+  let list;
+  let groups;
+
+  if (faction == "all") {
+    list = turfs.map(turf => {
+      let emoji = factions.find(x => x.get("faction_name") == turf.get("controlled_by"))?.get("simple_emoji") || client.config("contested_emoji");
+      let color = factions.find(x => x.get("faction_name") == turf.get("controlled_by"))?.get("asci_color") || 37;
+      let base = turf.get("is_base").toUpperCase() == "TRUE"
+
+      let result = `[2;${color}m【${turf.get("turf_id")}】${emoji}${base ? "🏠" : ""}[0m[2;37m ‣ [2;30m`
+
+      let stats = [];
+      if (turf.get("hot")) stats.push("HOT +" + turf.get("hot"))
+      if (turf.get("cool")) stats.push("COOL +" + turf.get("cool"))
+      if (turf.get("hard")) stats.push("HARD +" + turf.get("hard"))
+      if (turf.get("sharp")) stats.push("SHARP +" + turf.get("sharp"))
+      if (stats.length) result += `❰ ${stats.join(", ")} ❱`
+
+      if (turf.get("misc_bonus")) {
+        if (stats.length) result += " + Effect"
+        else result += turf.get("misc_bonus")
+      }
+
+      result += `[0m`
+
+      return result
+    })
+
+    groups = arrayChunks(list, 15);
+  } else {
+    let color = factions.find(x => x.get("faction_name") == faction)?.get("ansi_color") || 37
+
+    list = turfs.filter(x => x.get("controlled_by") == faction).map(turf => {
+      let base = turf.get("is_base").toUpperCase() == "TRUE"
+
+      let bonuses = sumBonus([turf]);
+      let res = `[2;${color}m【${turf.get("turf_id")}】${base ? "🏠 " : ""}[0m${turf.get("turf_name") ? `[2;37m${turf.get("turf_name")}:` : ""}`
+
+      if (bonuses.hot || bonuses.cool || bonuses.hard || bonuses.sharp) res += "\n[2;37m  ‣[2;30m "
+      if (bonuses.hot) res += `❰ HOT +${bonuses.hot} ❱ `
+      if (bonuses.cool) res += `❰ COOL +${bonuses.cool} ❱ `
+      if (bonuses.hard) res += `❰ HARD +${bonuses.hard} ❱ `
+      if (bonuses.sharp) res += `❰ SHARP +${bonuses.sharp} ❱ `
+
+      if ((Object.keys(bonuses.other).length)) {
+        res += "\n" + Object.entries(bonuses.other).map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
+      }
+
+      return res
+    })
+    groups = arrayChunks(list, 10);
+  }
+
+  return groups.map(x => x.join("\n"));
+}
+
+function inventoryEmbed(profile, client) {
+  return {
+    title: client.config("decorative_symbol") + " INVENTORY",
+    description: (profile.get("inventory") ? profile.get("inventory") : "-# You appear to have no items!"),
+    color: color(client.config("default_color")),
+    thumbnail: {
+      url: client.config("default_image")
     },
     timestamp: new Date().toISOString()
   }
@@ -60,7 +207,7 @@ function inventoryEmbed(profile, user) {
 function itemEmbed(item, user, simple = false) {
   return {
     title: `${user.client.config("poke_symbol")} ${item.get("item_name")}`,
-    description: (!simple ? `**\`   CATEGORY \`** ${item.get("category")}\n**\`       COST \`** ${item.get("price") ? `${user.client.config("money_symbol")}${item.get("price")}` : "N/A"
+    description: (!simple ? `**\`   CATEGORY \`** ${item.get("category")}\n**\`       COST \`** ${item.get("price") ? `${user.client.config("money_format").replace("{{MONEY}}", item.get("price"))}` : "N/A"
       }\n` : "")
       + (item.get("description")?.split("\n").map(x => `> ${x}`).join("\n") ?? "> *No description found.*"),
     color: color(user.client.config("default_color")),
@@ -78,10 +225,39 @@ function itemEmbed(item, user, simple = false) {
   }
 }
 
-function pad(str, length = 2, pad = "0") {
+const colorStats = (string, isBold = true) => {
+  let bold = isBold ? 1 : 2;
+  return string
+    .replace(/HOT/g, `[${bold};31mHOT[0m`)
+    .replace(/COOL/g, `[${bold};34mCOOL[0m`)
+    .replace(/HARD/g, `[${bold};33mHARD[0m`)
+    .replace(/SHARP/g, `[${bold};36mSHARP[0m`)
+}
+
+const diacritic = (string) => string.normalize('NFD').replace(/\p{Diacritic}/gu)
+
+function findChar(client, search, withNPC) {
+  let list = client.db.charas.map(x => ({
+    name: x.get("chara_name"),
+    fullname: x.get("full_name"),
+    npc: x.get("is_npc").toLowerCase()
+  })).filter(x => x.name)
+  if (!withNPC) list = list.filter(x => !x.npc || x.npc === "true")
+
+  let filter;
+
+  filter = list.find(val => diacritic(val.name.toLowerCase()) == diacritic(search.toLowerCase()))
+  if (filter) return filter.name;
+
+  filter = fuzzy.filter(search, list, { extract: (x) => diacritic(x.fullname) })
+  return filter?.[0]?.original.name
+}
+
+function pad(str, length = 2, pad = " ", after = false) {
   let string = "" + str;
   if (length - string.length > 0) {
-    return pad.repeat(length - string.length) + string
+    if (after) return string + pad.repeat(length - string.length)
+    else return pad.repeat(length - string.length) + string
   } else return string
 }
 
@@ -115,29 +291,6 @@ const styleText = {
 
     return result
   }
-}
-
-function level(xp) {
-  let level = 0, curr = 0;
-  let breakpoints = [
-    [5, 5],
-    [20, 10],
-    [30, 13],
-    [50, 16],
-    [70, 24],
-    [84, 30],
-    [90, 40],
-    [93, 60],
-    [100, 80]
-  ]
-
-  do {
-    level++;
-    curr += breakpoints.find(x => x[0] > level)?.[1] ?? 1000
-    if (level === 100) break
-  } while (curr <= xp)
-
-  return level
 }
 
 const color = (col) => parseInt(/#?(.+)/.exec(col)?.[1], 16)
@@ -203,7 +356,7 @@ function drawPool(pool, amt = 1) {
 
 async function pullPool(message, customCmd, override) {
   const data = (await message.client.db.actions.get(customCmd.get("sheet_id")))?.map(row => row.toObject()).filter(row => row.weight && row.value),
-    input = (override || message.content).slice(2 + customCmd.get("command_name").length).trim()
+    input = (override || message.content).slice(PREFIX.length + customCmd.get("command_name").length).trim()
 
   const configData = data.find(row => row.weight === "config")?.value,
     error = data.find(row => row.weight === "error")?.value
@@ -297,9 +450,11 @@ const removeEmpty = (obj) => {
 };
 
 module.exports = {
-  userEmbed, charaEmbed, inventoryEmbed, itemEmbed,
+  userEmbed, charaEmbed, factionEmbed,
+  inventoryEmbed, itemEmbed,
+  hexList,
+  findChar, diacritic,
   parseEmbed, formatEmbed,
-  level,
   pad, arrayChunks, removeEmpty, color,
   drawPool, pullPool,
   styleText

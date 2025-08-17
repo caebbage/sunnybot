@@ -10,7 +10,8 @@ const Discord = require("discord.js"),
   readdir = promisify(require("fs").readdir);
 
   client.commands = new Discord.Collection();
-  client.orders = new Discord.Collection();
+  client.slash = {};
+
   require("./module/sheets.js")(client);
 
 const init = async () => {
@@ -29,27 +30,19 @@ const init = async () => {
     }
   });
 
-  // register orders (prefix commands)
-  const orderFiles = (await readdir("./order/")).filter(f => f.endsWith(".js"));
-  console.log(`Loading a total of ${orderFiles.length} orders.`)
-  orderFiles.forEach(file => {
-    const order = require('./order/' + file);
-    if ('name' in order && 'execute' in order) {
-      client.orders.set(order.name, order);
-      console.log(`  [order] ${order.name}`)
-    } else {
-      console.log(`  [WARN] ${file} action data incomplete.`)
-    }
-  });
-
   // register commands
   const commandFiles = (await readdir("./command/")).filter(f => f.endsWith(".js"));
   console.log(`Loading a total of ${commandFiles.length} commands.`)
   commandFiles.forEach(file => {
     const command = require('./command/' + file);
-    if ('data' in command && 'execute' in command) {
-      client.commands.set(command.data.name, command);
-      console.log(`  [command] ${command.data.name}`)
+    if ('execute' in command) {
+      client.commands.set(command.name, command);
+      if (command.prefix) {
+        client.slash[command.name] = command.name;
+        if (command.alias) command.alias.forEach((a) => client.slash[a] = command.name)
+      }
+
+      console.log(`  [command] ${command.name}`)
     } else {
       console.log(`  [WARN] ${file} command data incomplete.`)
     }

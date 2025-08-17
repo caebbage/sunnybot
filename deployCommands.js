@@ -12,9 +12,9 @@ const { REST, Routes } = require('discord.js'),
 
   commandFiles.forEach(file => {
     const command = require('./command/' + file);
-    if ('data' in command && 'execute' in command) {
-      commands.push(command.data.toJSON());
-      console.log(`  [command] "${command.data.name}" loaded.`)
+    if ('slash' in command && 'execute' in command) {
+      commands.push(command.slash.toJSON());
+      console.log(`  [command] "${command.name}" loaded.`)
     } else {
       console.log(`  [WARN] ${file} command data incomplete.`)
     }

@@ -57,7 +57,7 @@ module.exports = async (client) => {
     return res
   }
 
-  for (let sheet of ["users", "charas", "items", "tasks", "work", "crime", "reactroles"]) {
+  for (let sheet of ["users", "charas", "factions", "turf", "items", "tasks", "work", "crime", "reactroles"]) {
     client.db[sheet] = await setup(client.config(`${sheet}_sheet`))
   }
 
@@ -65,12 +65,12 @@ module.exports = async (client) => {
     await (await client.channels.fetch(row.get("message_channel"))).messages.fetch(row.get("message_id"))
   }
 
-  client.log = async function (description) {
+  client.log = async function (description, sender) {
     try {
       const log = await client.channels.fetch(client.config("log_channel"));
       log.send({
         embeds: [{
-          description,
+          description: description + (sender ? (`\n\n-# Executed by <@${sender}>`) : ""),
           timestamp: new Date().toISOString()
         }]
       })

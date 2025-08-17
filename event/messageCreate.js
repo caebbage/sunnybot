@@ -5,24 +5,26 @@ module.exports = {
   name: Events.MessageCreate,
   async execute(message) {
     try {
-      if (message.content.indexOf("p!") !== 0) return
+      const PREFIX = process.env.PREFIX;
+
+      if (message.content.indexOf(PREFIX) !== 0) return
 
       const actionName = (function () {
         let space = message.content.indexOf(" ");
         let newline = message.content.indexOf("\n");
 
-        if (space != -1 && newline != -1 && space < newline) return message.content.slice(2, space)
-        else if (space != -1 && newline != -1 && space > newline) return message.content.slice(2, newline)
-        else if (space != -1) return message.content.slice(2, space)
-        else if (newline != -1) return message.content.slice(2, newline)
-        else return message.content.slice(2)
+        if (space != -1 && newline != -1 && space < newline) return message.content.slice(PREFIX.length, space)
+        else if (space != -1 && newline != -1 && space > newline) return message.content.slice(PREFIX.length, newline)
+        else if (space != -1) return message.content.slice(PREFIX.length, space)
+        else if (newline != -1) return message.content.slice(PREFIX.length, newline)
+        else return message.content.slice(PREFIX.length)
       })().toLowerCase().trim();
 
-      const action = message.client.orders.get(actionName)
+      const action = message.client.slash[actionName]
 
       if (action) {
         try {
-          await action.execute(message, message.content.slice(2 + actionName.length).trim())
+          await await message.client.commands.get(action).parse(undefined, message, message.content.slice(PREFIX.length + actionName.length).trim())
         } catch (error) {
           message.author.send("An error occurred:\n`" + error.message + "`")
         }

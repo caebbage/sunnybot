@@ -1,5 +1,7 @@
 const fuzzy = require("fuzzy");
 
+const money = (amt, client) => client.config("money_format").replace("{{MONEY}}", amt)
+
 async function userEmbed(profile, client) {
   return {
     title: client.config("decorative_symbol") + " " + profile.get("display_name").toUpperCase(),
@@ -204,15 +206,15 @@ function inventoryEmbed(profile, client) {
   }
 }
 
-function itemEmbed(item, user, simple = false) {
+function itemEmbed(item, client, simple = false) {
   return {
-    title: `${user.client.config("poke_symbol")} ${item.get("item_name")}`,
-    description: (!simple ? `**\`   CATEGORY \`** ${item.get("category")}\n**\`       COST \`** ${item.get("price") ? `${user.client.config("money_format").replace("{{MONEY}}", item.get("price"))}` : "N/A"
+    title: `${client.config("decorative_symbol")} ${item.get("item_name").toUpperCase()}`,
+    description: (!simple ? `**\`   CATEGORY \`** ${item.get("category")}\n**\`       COST \`** ${item.get("price") ? `${money(item.get("price"), client)}` : "N/A"
       }\n` : "")
       + (item.get("description")?.split("\n").map(x => `> ${x}`).join("\n") ?? "> *No description found.*"),
-    color: color(user.client.config("default_color")),
+    color: color(client.config("default_color")),
     thumbnail: {
-      url: item.get("item_image") || user.client.config("default_image")
+      url: item.get("item_image") || client.config("default_image")
     },
     footer: (item.get("hold_limit") || item.get("monthly_limit") || item.get("perma_limit") ? (() => {
       let limit = []
@@ -346,7 +348,7 @@ function drawPool(pool, amt = 1) {
 
     for (let item of pool) {
       if (rng < +item.weight) {
-        result.push(item.value)
+        result.push(item)
         break;
       } else rng -= +item.weight
     }
@@ -411,10 +413,10 @@ async function pullPool(message, customCmd, override) {
 
   if (validResults.length) {
     output.embeds = formatEmbed(
-      drawPool(validResults, times).map(val => {
-        let res = val.replace(/{{@USER}}/gi, `<@${message.author.id}>`)
+      drawPool(validResults, times).map(pull => {
+        let res = pull.value.replace(/{{@USER}}/gi, `<@${message.author.id}>`)
 
-        let fields = val.match(/{{.*?}}/g);
+        let fields = pull.value.match(/{{.*?}}/g);
 
         if (fields?.length) {
           let replacements = fields.map(field => {
@@ -439,6 +441,14 @@ async function pullPool(message, customCmd, override) {
   return output
 }
 
+
+const randBetween = (min, max) => {
+  let a = +min;
+  let b = +max - +min + 1;
+
+  return a + Math.floor(Math.random() * b);
+}
+
 const arrayChunks = (array, chunk_size) => Array(Math.ceil(array.length / chunk_size)).fill().map((_, index) => index * chunk_size).map(begin => array.slice(begin, begin + chunk_size))
 const removeEmpty = (obj) => {
   let newObj = {};
@@ -450,12 +460,14 @@ const removeEmpty = (obj) => {
 };
 
 module.exports = {
+  money,
   userEmbed, charaEmbed, factionEmbed,
   inventoryEmbed, itemEmbed,
   hexList,
   findChar, diacritic,
   parseEmbed, formatEmbed,
   pad, arrayChunks, removeEmpty, color,
+  randBetween,
   drawPool, pullPool,
   styleText
 }

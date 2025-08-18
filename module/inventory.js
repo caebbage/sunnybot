@@ -27,7 +27,7 @@ module.exports = {
       return true
     }
     
-    hasItem(item, amt) {
+    hasItem(item, amt = 1) {
       if (this.get(item) - amt < 0) return false
       return true
     }
@@ -45,20 +45,21 @@ module.exports = {
 
 
     take(take) {
-      if (this.checkHas(take)) {
+      if (this.has(take)) {
         for (let [item, amt] of (take.entries?.() || take)) {
           this.data[item] -= amt;
         }
       } else throw new Error("The requested items are not available!")
 
-      this.clean()
-      return this;
+      return this.clean()
     }
 
-    takeItem(item, amt) {
-      if (this.checkHas([[item, amt]])) {
+    takeItem(item, amt = 1) {
+      if (this.hasItem(item, amt)) {
         this.data[item] -= amt
       } else throw new Error("The requested item is not available!")
+      
+      return this.clean()
     }
 
 
@@ -67,15 +68,13 @@ module.exports = {
         this.data[item] = (this.data[item] || 0) + amt
       }
 
-      this.sort()
-      return this
+      return this.sort()
     }
 
-    giveItem(item, amt) {
+    giveItem(item, amt = 1) {
       this.data[item] = (this.data[item] || 0) + amt
 
-      this.sort()
-      return this
+      return this.sort()
     }
   }
 }

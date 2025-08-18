@@ -1,5 +1,5 @@
 const { Inventory } = require('./inventory.js');
-const { level, color } = require("../module/helpers.js");
+const { color, money } = require("../module/helpers.js");
 
 async function award(interaction, profile, chara, awarded, mode = 0) {
   let embeds = [], log = [];
@@ -17,7 +17,7 @@ async function award(interaction, profile, chara, awarded, mode = 0) {
     profile.set("money", newVal)
     log.push(`> **money:** +${awarded.money} (${oldVal} → ${newVal})`)
     embeds.push({
-      description: `<@${profile.get("user_id")}> has received ${client.config("money_format").replace("{{MONEY}}", awarded.money)}!`,
+      description: `<@${profile.get("user_id")}> has received ${money(awarded.money, client)}!`,
       color: color(client.config("default_color"))
     })
   }
@@ -123,7 +123,7 @@ async function deduct(interaction, profile, chara, deducted, mode = 0) {
     profile.set("money", newVal)
     log.push(`> **money:** -${deducted.money} (${oldVal} → ${newVal})`)
     embeds.push({
-      description: `<@${profile.get("user_id")}> has lost ${client.config("money_format").replace("{{MONEY}}", deducted.money)}.`,
+      description: `<@${profile.get("user_id")}> has lost ${money(deducted.money, client)}.`,
       color: color(client.config("default_color"))
     })
   }

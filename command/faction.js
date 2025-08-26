@@ -110,15 +110,13 @@ module.exports = {
 
         let embed = {
           title: `📍 ${faction.get("faction_name").toUpperCase()} TERRITORY`,
-          description: "```ansi\n" + list[page] + "```"
-          + `\n-# Page ${page + 1} of ${list.length}`
-          ,
+          description: "```ansi\n" + list[page] + "```",
           color: color(faction.get("main_color") || client.config("default_color")),
           thumbnail: {
             url: faction.get("crest_image")
           },
           footer: {
-            "text": "SUNNY CANTILADOS",
+            "text": `SUNNY CANTILADOS ${client.config("decorative_symbol")} Page ${page + 1} of ${list.length}`,
             "icon_url": client.config("default_image")
           },
         }
@@ -163,7 +161,7 @@ function buttons(faction, client, page = -1) {
         custom_id: `faction:${faction.get("faction_name")}:hexlist:${page - 1}`,
         type: 2,
         style: client.config("default_button_color"),
-        label: `◀`
+        label: `◀ Back`
       })
     }
 
@@ -172,7 +170,7 @@ function buttons(faction, client, page = -1) {
         custom_id: `faction:${faction.get("faction_name")}:hexlist:${page + 1}`,
         type: 2,
         style: client.config("default_button_color"),
-        label: `▶`
+        label: `▶ Next`
       })
     }
   }

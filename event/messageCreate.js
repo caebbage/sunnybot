@@ -1,5 +1,5 @@
 const { Events } = require('discord.js'),
-  { pullPool } = require("../module/helpers.js")
+  { pullPool } = require("../module/gacha.js")
 
 module.exports = {
   name: Events.MessageCreate,
@@ -33,9 +33,10 @@ module.exports = {
 
         if (!customCmd) return
 
-        let output = await pullPool(message, customCmd);
+        let [output, deleteInput] = await pullPool(message, customCmd);
 
-        message.reply(output)
+        await message.reply(output)
+        if (deleteInput) await message.delete()
       }
     } catch (error) {
       console.log(error)

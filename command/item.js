@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
   fuzzy = require("fuzzy"),
-  { itemEmbed, drawPool, color, money } = require("../module/helpers.js"),
+  { itemEmbed, color, money } = require("../module/helpers.js"),
+  { drawPool } = require("../module/gacha.js"),
   { Inventory } = require("../module/inventory.js");
 
 module.exports = {

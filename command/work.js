@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js')
-const { randBetween, drawPool, money, color } = require("../module/helpers.js")
+const { randBetween, money, color } = require("../module/helpers.js")
+const { drawPool } = require("../module/gacha.js")
 
 module.exports = {
   name: "work",

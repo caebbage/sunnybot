@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js')
-const { randBetween, drawPool, money, color } = require("../module/helpers.js")
+const { randBetween, money, color } = require("../module/helpers.js")
+const { drawPool } = require("../module/gacha.js")
 
 module.exports = {
   name: "crime",
@@ -112,7 +113,7 @@ module.exports = {
 
         await client.log(`**CRIME:** <@${input.user}>`
           + `\n> **Result:** Fail`
-          + `\n> **Money:** ${fine} (${oldVal} → ${newVal})`
+          + `\n> **Money:** -${fine} (${oldVal} → ${newVal})`
         )
 
         await profile.save()

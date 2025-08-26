@@ -143,7 +143,7 @@ module.exports = {
         if (focused.value.length <= 1) await db.users.reload()
         const inventory = new Inventory(db.users.find(x => x.get("user_id") == interaction.options.get("user")?.value ?? "").get("inventory")) || [];
 
-        let filtered = !inventory.isEmpty() ? fuzzy.filter(focused.value, inventory.toArray(), { extract: x => x[0].normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let filtered = !inventory.isEmpty() ? fuzzy.filter(focused.value, inventory.entries(), { extract: x => x[0].normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

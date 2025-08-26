@@ -139,7 +139,7 @@ module.exports = {
           filtered.map(choice => ({ name: choice.original.get("full_name"), value: choice.original.get("chara_name") }))
         )
       } else if (focused.name === "item") {
-        if (focused.value.length <= 1) db.items.reload()
+        if (focused.value.length <= 1) await db.items.reload()
 
         let filtered = db.items.data?.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name").normalize('NFD').replace(/\p{Diacritic}/gu, '') ?? " " }) : []
         if (filtered.length > 25) filtered.length = 25

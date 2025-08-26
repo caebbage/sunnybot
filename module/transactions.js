@@ -52,7 +52,7 @@ async function award(interaction, profile, chara, awarded, mode = 0) {
     log.push(`> **item gain:**\n` + awarded.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
     embeds.push({
       description: `<@${profile.get("user_id")}> has gained the following item(s):\n`
-        + items.toString().split("\n").map(x => `> ${x}`).join("\n"),
+        + awarded.items.toString().split("\n").map(x => `> ${x}`).join("\n"),
       color: color(client.config("default_color"))
     })
   }
@@ -197,8 +197,8 @@ async function deduct(interaction, profile, chara, deducted, mode = 0) {
 
   // respond after
   if (embeds.length) {
-    if (mode === 0) interaction.followUp({ embeds }) // follow-up to interaction
-    else if (mode === 1) interaction.reply({ embeds }) // direct response to interaction
+    if (mode === 0) return await interaction.followUp({ embeds }) // follow-up to interaction
+    else if (mode === 1) return await interaction.reply({ embeds }) // direct response to interaction
     else if (mode === 2) { /* no message */ }
   }
 }

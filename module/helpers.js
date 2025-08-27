@@ -342,6 +342,10 @@ const randBetween = (min, max) => {
   return a + Math.floor(Math.random() * b);
 }
 
+const limit = (num, min, max) => {
+  return Math.min(Math.max(num, min), max)
+}
+
 const arrayChunks = (array, chunk_size) => Array(Math.ceil(array.length / chunk_size)).fill().map((_, index) => index * chunk_size).map(begin => array.slice(begin, begin + chunk_size))
 const removeEmpty = (obj) => {
   let newObj = {};
@@ -360,6 +364,6 @@ module.exports = {
   findChar, diacritic,
   parseEmbed, formatEmbed,
   pad, arrayChunks, removeEmpty, color,
-  randBetween,
+  randBetween, limit,
   styleText
 }

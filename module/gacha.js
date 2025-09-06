@@ -1,3 +1,7 @@
+
+const { formatEmbed, color, parseEmbed, arrayChunks } = require("../module/helpers.js")
+const { PermissionsBitField } = require("discord.js")
+
 function drawPool(pool, amt = 1) {
   let poolSize = 0,
     result = []
@@ -19,9 +23,9 @@ function drawPool(pool, amt = 1) {
   return result;
 }
 
-async function pullPool(message, customCmd, override) {
-  const data = (await message.client.db.actions.get(customCmd.get("sheet_id")))?.map(row => row.toObject()).filter(row => row.weight && row.value),
-    input = (override || message.content).slice(PREFIX.length + customCmd.get("command_name").length).trim()
+async function pullPool(message, name, customCmd, override) {
+  const data = customCmd.map(row => row.toObject()).filter(row => row.weight && row.value),
+    input = (override || message.content).slice(process.env.PREFIX.length + name.length).trim()
 
   const configData = data.find(row => row.weight === "config")?.value,
     error = data.find(row => row.weight === "error")?.value
@@ -42,7 +46,7 @@ async function pullPool(message, customCmd, override) {
     options.deleteInput = /(?<=^\*\*deleteInput:\*\*) ?true$/mi.test(configData)
   }
 
-  if (options.adminOnly && !message.member?.permissionsIn(message.channel).has("ADMINISTRATOR")) {
+  if (options.adminOnly && !message.member?.permissionsIn(message.channel).has(PermissionsBitField.Flags.Administrator)) {
     throw new Error("You don't have the permissions to use this command!")
   }
 
@@ -60,7 +64,7 @@ async function pullPool(message, customCmd, override) {
       output.components = arrayChunks(
         tabs.map(x => {
           return {
-            custom_id: `action:${customCmd.get("command_name")}:${x}`,
+            custom_id: `action:${name}:${x}`,
             type: 2,
             style: options.buttonColor,
             label: x
@@ -90,7 +94,7 @@ async function pullPool(message, customCmd, override) {
         if (fields?.length) {
           let replacements = fields.map(field => {
             let choices = data.filter(row => (row.subcommand || "default").split(";").map(x => x.toLowerCase().trim()).includes(field.toLowerCase()))
-            if (choices.length) return drawPool(choices)[0]
+            if (choices.length) return drawPool(choices)[0]?.value
             return false
           })
 
@@ -107,7 +111,7 @@ async function pullPool(message, customCmd, override) {
     else output.embeds = formatEmbed(["Subcommand not found... make sure you've typed your choice correctly."], output.embeds[0], options.embedFormat)
   }
 
-  return [output, deleteInput]
+  return [output, options.deleteInput]
 }
 
 module.exports = {

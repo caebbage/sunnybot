@@ -138,6 +138,9 @@ module.exports = {
 
 function buttons(faction, client, page = -1) {
   let buttons = [];
+  let list = hexList(client, faction.get("faction_name"));
+
+  if (!list.length) return;
 
   buttons.push({
     custom_id: `faction:${faction.get("faction_name")}:info`,
@@ -154,7 +157,6 @@ function buttons(faction, client, page = -1) {
       label: `📍 Territory`
     })
   } else {
-    let list = hexList(client, faction.get("faction_name"));
 
     if (page > 0) {
       buttons.push({

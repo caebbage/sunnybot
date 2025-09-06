@@ -1,3 +1,5 @@
+const { PermissionsBitField } = require("discord.js")
+
 module.exports = {
   name: "embed",
   prefix: true,
@@ -6,7 +8,7 @@ module.exports = {
   },
   async execute(client, message) {
     try {
-      if (!message.member?.permissionsIn(message.channel).has("ADMINISTRATOR")) { return message.react("❌") }
+      if (!message.member?.permissionsIn(message.channel).has(PermissionsBitField.Flags.Administrator)) { return message.react("❌") }
 
       let link = /https:\/\/discord\.com\/channels\/(?<guild>.+)\/(?<channel>\d+)\/(?<message>\d+)/.exec(message.content);
       if (!link) throw new Error("Specify a link for your embed contents.")

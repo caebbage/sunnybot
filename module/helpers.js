@@ -2,13 +2,13 @@ const fuzzy = require("fuzzy");
 
 const money = (amt, client) => client.config("money_format").replace("{{MONEY}}", amt)
 
-async function userEmbed(profile, client) {
+function userEmbed(profile, client) {
   return {
     title: client.config("decorative_symbol") + " " + profile.get("display_name").toUpperCase(),
     description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0"),
     color: color(client.config("default_color")),
     footer: {
-      text: "@" + (await client.users.fetch(profile.get("user_id"))).username
+      text: "@" + client.users.resolve(profile.get("user_id"))?.username
         + " ✦ " + (profile.get("pronouns") || "N/A")
         + " ✦ " + (profile.get("timezone") || "GMT +?")
     }
@@ -28,7 +28,7 @@ function charaEmbed(chara, client) {
     sharp: (!isNaN(+chara.get("sharp")) ? +chara.get("sharp") : 0) + bonuses.sharp + (!isNaN(+faction.get("sharp")) ? +faction.get("sharp") : 0)
   }
 
-  return {
+  let result = {
     title: (faction.get("pin_emoji") || faction.get("simple_emoji")) + " " + chara.get("full_name").toUpperCase(),
     url: chara.get("app"),
     description: "-# " + [
@@ -48,10 +48,11 @@ function charaEmbed(chara, client) {
         pad(`${pad(stat.toUpperCase(), 5)} ${stats[stat] >= 0 ? "+" : ""}${stats[stat]}`, 15, " ", true)
       ), 2).map(x => x.join("")).join("\n"))
       + "```"
-      + "\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) + "\n\n" + turfBonus(faction, client) + "```"
+      + "\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) +
+      (turfBonus(faction, client) ? "\n\n" + turfBonus(faction, client) : "") + "```"
       + "\n-# Stat bonuses are already added to the stats block."
     ,
-    color: color(faction.get("main_color") || client.config("default_color")),
+    color: color((chara.get("is_npc")?.toUpperCase() !== "TRUE" ? faction.get("main_color") : false) || client.config("default_color")),
     thumbnail: {
       url: faction.get("crest_image")
     },
@@ -63,6 +64,20 @@ function charaEmbed(chara, client) {
       "icon_url": client.config("default_image")
     },
   }
+
+  let user = client.users.resolve(chara.get("owner_id"));
+
+  if (user) {
+    let profile = client.db.users.find(x => x.get("user_id") === chara.get("owner_id"))
+
+    result.footer = {
+      text: "@" + user.username
+        + " ✦ " + (profile.get("pronouns") || "N/A")
+        + " ✦ " + (profile.get("timezone") || "GMT +?")
+    }
+  }
+
+  return result
 }
 
 function factionEmbed(faction, client) {
@@ -75,7 +90,8 @@ function factionEmbed(faction, client) {
       + `\n\n👤\` MEMBERS ✦ \` ${client.db.charas.filter(x => x.get("chara_name") && x.get("faction") == faction.get("faction_name")).length}`
       + `\n📍\` HEXES OWNED ✦ \` ${client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")).length}/99`
       + `\n💳\` FUNDS ✦ \` ${faction.get("funds")}`
-      + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) + "\n\n" + turfBonus(faction, client) + "```"
+      + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) +
+      (turfBonus(faction, client) ? "\n\n" + turfBonus(faction, client) : "") + "```"
     ,
     color: color(faction.get("main_color") || client.config("default_color")),
     thumbnail: {
@@ -117,6 +133,8 @@ function sumBonus(turfs) {
 
 function turfBonus(faction, client) {
   let turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"))
+
+  if (!turfs.length) return;
 
   let bonuses = sumBonus(turfs);
 
@@ -236,13 +254,13 @@ const colorStats = (string, isBold = true) => {
     .replace(/SHARP/g, `[${bold};36mSHARP[0m`)
 }
 
-const diacritic = (string) => string.normalize('NFD').replace(/\p{Diacritic}/gu)
+const diacritic = (string) => string?.normalize('NFD').replace(/\p{Diacritic}/gu)
 
 function findChar(client, search, withNPC) {
   let list = client.db.charas.map(x => ({
     name: x.get("chara_name"),
     fullname: x.get("full_name"),
-    npc: x.get("is_npc").toLowerCase()
+    npc: x.get("is_npc")?.toLowerCase()
   })).filter(x => x.name)
   if (!withNPC) list = list.filter(x => !x.npc || x.npc === "true")
 
@@ -251,7 +269,7 @@ function findChar(client, search, withNPC) {
   filter = list.find(val => diacritic(val.name.toLowerCase()) == diacritic(search.toLowerCase()))
   if (filter) return filter.name;
 
-  filter = fuzzy.filter(search, list, { extract: (x) => diacritic(x.fullname) })
+  filter = fuzzy.filter(search, list, { extract: (x) => diacritic(x.full_name) })
   return filter?.[0]?.original.name
 }
 

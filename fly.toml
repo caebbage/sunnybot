@@ -1,0 +1,23 @@
+# fly.toml app configuration file generated for sunny-cantilados-bot on 2025-08-29T19:42:54-05:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'sunny-cantilados-bot'
+primary_region = 'sjc'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
+
+[experimental]
+  auto_rollback = true
+
+[build]
+  builtin = 'node'
+
+[env]
+  PORT = '8080'
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1

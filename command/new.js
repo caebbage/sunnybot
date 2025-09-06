@@ -36,6 +36,10 @@ module.exports = {
       .addStringOption(option => option
         .setName('faction')
         .setDescription("The character's faction.")
+        .addChoices(
+          { name: 'Cartel', value: 'cartel' },
+          { name: 'Triad', value: 'triad' }
+        )
         .setRequired(true)
       )
       .addBooleanOption(option => option
@@ -73,19 +77,21 @@ module.exports = {
         await client.log(`**NEW PROFILE:** ${input.user}`, input.source.user.id)
 
         return await input.source.reply({
-          content: "User created! Please edit info within Sheets database.",
-          embeds: [
-            await userEmbed(profile, client)
-          ]
+          content: `User created! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=509433378#gid=509433378>).`,
         })
       } else if (input.command === "chara") {
-        let profile = db.users.find(row => row.get("user_id") == input.user);
+        let profile = db.users.find(row => row.get("user_id") == input.user),
+          newProf = false;
 
         if (!profile) {
           profile = await db.users.sheet.addRow({
-            user_id: input.user,
-            display_name: (await client.users.fetch(input.user)).username
+            user_id: input.user.id,
+            display_name: input.user.username,
+            pronouns: "tba",
+            timezone: "GMT +?",
+            money: 0
           })
+          newProf = true
           await client.log(`**NEW PROFILE:** ${input.user}`, input.source.user.id)
         }
 
@@ -96,8 +102,20 @@ module.exports = {
           owner_id: input.user.id,
           full_name: input.fullname,
           faction: input.faction,
+          rank: `⁎ MEMBER`,
+          family: `???`,
+          pronouns: `???`,
+          height: `???`,
+          status: "ACTIVE",
+
           reputation: 1000,
-          is_NPC: input.npc
+          heat: 0,
+          hot: 0,
+          cool: 0,
+          hard: 0,
+          sharp: 0,
+
+          is_NPC: input.npc || "FALSE"
         };
 
         let chara = await db.charas.sheet.addRow(res)
@@ -105,11 +123,9 @@ module.exports = {
         await client.log(`**NEW CHARACTER:** \`${res.chara_name}\` (${res.full_name}) (${input.user})`, input.source.user.id)
 
         return await input.source.reply({
-          content: "Character added! Please edit info within Sheets database.",
-          embeds: [
-            await userEmbed(profile, client),
-            charaEmbed(chara, client)
-          ]
+          content:
+            newProf ? `User created! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=509433378#gid=509433378>).` : ""
+              + `Character ${input.name} added! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=942489959#gid=942489959>).`
         })
       }
     } catch (error) {

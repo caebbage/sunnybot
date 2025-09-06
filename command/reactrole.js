@@ -1,3 +1,5 @@
+const { PermissionsBitField } = require("discord.js")
+
 module.exports = {
   name: "reactrole",
   prefix: true,
@@ -9,7 +11,7 @@ module.exports = {
     let inputs = input.split(" ");
 
     try {
-      if (!message.member?.permissionsIn(message.channel).has("ADMINISTRATOR")) { return message.react("❌") }
+      if (!message.member?.permissionsIn(message.channel).has(PermissionsBitField.Flags.Administrator)) { return message.react("❌") }
       
       if (inputs[0] === "add") {
         if (!inputs[1] || !/(?<=<@&)\d+(?=>)/.test(inputs[2])) return message.react("❌")

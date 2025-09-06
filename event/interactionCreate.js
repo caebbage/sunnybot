@@ -1,10 +1,11 @@
 const { Events, MessageFlags } = require('discord.js');
-const { pullPool } = require("../module/helpers.js")
+const { pullPool } = require("../module/gacha.js")
 
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
     const client = interaction.client;
+    const PREFIX = process.env.PREFIX;
 
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
@@ -42,13 +43,12 @@ module.exports = {
       try {
         if (commandName == "action") {
 
-          const customCmd = client.db.actions.find(row => row.get("command_name").trim() == commandChain[0]),
+          const customCmd = await client.db.actions.get(commandChain[0]),
             src = await interaction.message.channel.messages.fetch(interaction.message.reference.messageId);
 
           if (!customCmd) return await interaction.reply({ content: 'The button was not recognized!', flags: MessageFlags.Ephemeral });
-          if (interaction.user.id !== src.author.id) throw new Error('Only the original sender can use these buttons!');
-
-          await interaction.update((await pullPool(interaction.message, customCmd, PREFIX.length + commandChain.join(" ")))[0])
+          if (interaction.user.id !== src?.author.id) throw new Error('Only the original sender can use these buttons!');
+          await interaction.update((await pullPool(interaction.message, commandChain[0], customCmd, PREFIX + commandChain.join(" ")))[0])
 
         } else if (!command) throw new Error('The button was not recognized!')
         else await command.button(interaction, commandChain);

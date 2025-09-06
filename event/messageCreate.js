@@ -29,14 +29,17 @@ module.exports = {
           message.author.send("An error occurred:\n`" + error.message + "`")
         }
       } else {
-        const customCmd = message.client.db.actions.find(row => row.get("command_name").trim() == actionName);
+        await message.client.db.actions.reload();
+        const customCmd = await message.client.db.actions.get(actionName);
 
         if (!customCmd) return
 
-        let [output, deleteInput] = await pullPool(message, customCmd);
-
-        await message.reply(output)
-        if (deleteInput) await message.delete()
+        let [output, deleteInput] = await pullPool(message, actionName, customCmd);
+       
+        if (deleteInput) {
+          message.channel.send(output)
+          await message.delete()
+        } else await message.reply(output)
       }
     } catch (error) {
       console.log(error)

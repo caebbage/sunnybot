@@ -92,7 +92,7 @@ async function award(interaction, profile, chara, awarded, mode = 0) {
 
   await client.log(
     `**TRANSACTION:** `
-    + `<@${profile?.get("user_id") || chara?.get("owner")}>`
+    + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
     + (chara ? ` (${chara.get("chara_name")})` : "")
     + "\n" + log.join("\n> \n"),
     interaction.user.id

@@ -7,7 +7,7 @@ module.exports = {
   prefix: true,
   slash: new SlashCommandBuilder()
     .setName('text')
-    .setDescription(`Formats text`)
+    .setDescription(`Formats text.`)
     .addStringOption(option => option
       .setName("style")
       .setDescription("Which style the text will be formatted in.")

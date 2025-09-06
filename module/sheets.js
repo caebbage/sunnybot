@@ -38,11 +38,16 @@ module.exports = async (client) => {
     let res = {
       sheet: client.sheets.config.src.sheetsById[sheetId],
       async reload() {
-        this.data = await this.sheet?.getRows() ?? this.data()
+        this.data = await this.sheet?.getRows({
+          limit: 250
+        }) ?? this.data()
       },
       data: [],
       find(...args) {
         return this.data.find(...args)
+      },
+      sort(...args) {
+        return this.data.sort(...args)
       },
       filter(...args) {
         return this.data.filter(...args)
@@ -86,7 +91,6 @@ module.exports = async (client) => {
 
   client.sheets.commands.refresh = async function () {
     await client.sheets.commands.src.loadInfo()
-    client.sheets.commands.main = await client.sheets.commands.src.sheetsById[0].getRows()
     console.log(`[REFRESH] Commands`)
   }
 
@@ -96,9 +100,12 @@ module.exports = async (client) => {
     let res = {
       sheet: client.sheets.commands.src.sheetsById[0],
       async reload() {
-        this.data = await this.sheet.getRows() ?? this.data()
+        this.data = (await this.sheet?.getRows({
+          limit: 500
+        }))?.filter(x => x.get("command_name")) ?? this.data()
       },
       data: [],
+      list: client.sheets.commands.src,
       find(...args) {
         return this.data.find(...args)
       },
@@ -108,10 +115,13 @@ module.exports = async (client) => {
       map(...args) {
         return this.data.map(...args)
       },
-      async get(id) {
+      async get(name) {
         try {
-          await client.sheets.commands.src.loadInfo()
-          return await client.sheets.commands.src.sheetsById[id].getRows()
+          let id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")
+          if (!id) return;
+          
+          await this.list.loadInfo()
+          return (await this.list.sheetsById[id].getRows())?.filter(x => x.get("weight")) ?? []
         } catch (error) {
           console.log(error)
           return null

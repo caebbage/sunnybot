@@ -127,7 +127,7 @@ module.exports = {
         const name = item.get("item_name"),
           amount = input.amount ?? 1;
 
-        if (item.get("shop_stock") === "0") {
+        if (item.get("shop_stock") === "0" || (item.get("shop_stock") && +item.get("shop_stock") - amount < 0)) {
           throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThere is not enough stock.`)
 
         } else if (!item.get("price") || item.get("in_shop") !== "TRUE") {

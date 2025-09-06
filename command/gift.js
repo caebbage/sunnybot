@@ -64,6 +64,7 @@ module.exports = {
 
         if (!giver) throw new Error("You don't have a profile to be gifting from!")
         if (!receiver) throw new Error("The user you're giving to doesn't yet exist! They may need to be registered by mods.")
+        if (input.giver === input.receiver) throw new Error("You're trying to gift things to yourself!")
 
         if (+giver.get("money") < input.amount) throw new Error("You don't have that much money to give!")
 

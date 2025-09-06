@@ -16,6 +16,7 @@ kill_timeout = '5s'
 
 [env]
   PORT = '8080'
+  TZ = 'America/Los_Angeles'
 
 [[vm]]
   memory = '256mb'

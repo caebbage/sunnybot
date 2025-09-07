@@ -1,4 +1,5 @@
 const { PermissionsBitField } = require("discord.js")
+const { parseEmbed } = require("../module/helpers.js")
 
 module.exports = {
   name: "embed",

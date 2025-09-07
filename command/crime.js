@@ -43,6 +43,8 @@ module.exports = {
         config[param[1]] = param[2]
       })
 
+      if (config.disabled?.toLowerCase() == "true") return;
+
       const lastUsed = new Date(+profile.get("crime_cooldown") || 0);
       const nextValid = new Date();
 

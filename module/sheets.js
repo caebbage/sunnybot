@@ -67,7 +67,11 @@ module.exports = async (client) => {
   }
 
   for (let row of client.db.reactroles.filter(row => row.get("message_id"))) {
-    await (await client.channels.fetch(row.get("message_channel"))).messages.fetch(row.get("message_id"))
+    try {
+      await (await client.channels.fetch(row.get("message_channel"))).messages.fetch(row.get("message_id"))
+    } catch (err) {
+      row.delete()
+    }
   }
 
   client.log = async function (description, sender) {

@@ -102,6 +102,9 @@ module.exports = {
         if (["self", "user"].includes(input.command)) {
           profile = db.users.find(row => row.get("user_id") == input.user);
 
+          if (!profile) throw new Error("The specified user could not be found! They may not yet be registered in the system.")
+
+          allChara = db.charas.filter(row => row.get("owner_id") == profile.get("user_id"));
         } if (input.command === "name") {
           let search = findChar(client, input.chara, true);
           if (!search) throw new Error("The specified character could not be found!")
@@ -114,7 +117,6 @@ module.exports = {
 
         if (!profile) throw new Error("The specified user could not be found! They may not yet be registered in the system.")
 
-        allChara = db.charas.filter(row => row.get("owner_id") == profile.get("user_id"));
 
         return await input.source.reply({
           embeds: [

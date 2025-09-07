@@ -8,7 +8,7 @@ module.exports = {
     
     client.user.setPresence({
       activities: [{
-        name: 'Good day~',
+        name: "It's sunny today!",
         type: 4
       }],
       status: 'online'

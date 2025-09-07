@@ -120,7 +120,7 @@ module.exports = {
 
         return await input.source.reply({
           embeds: [
-            chara ? charaEmbed(chara, client) : allChara.length ? charaEmbed(allChara[0], client) : {
+            chara ? charaEmbed(chara, client) : allChara?.length ? charaEmbed(allChara[0], client) : {
               description: "Character(s) not found! Let Teru know if this is an error.",
               color: color(client.config("default_color")),
               footer: {
@@ -129,7 +129,7 @@ module.exports = {
               },
             }
           ],
-          components: buttons(input.sender === (chara?.get("owner_id") || allChara?.[0].get("owner_id")), allChara, db.factions.data, client),
+          components: buttons(allChara, db.factions.data, client),
           flags: (input.hide ? MessageFlags.Ephemeral : undefined)
         })
       } else {
@@ -289,11 +289,11 @@ module.exports = {
 
 
 
-function buttons(self, allChara, factions, client) {
+function buttons(allChara, factions, client) {
   let buttons = [];
   const fac = Object.fromEntries(factions.filter(x => x.get("faction_name")).map(x => [x.get("faction_name"), x.toObject()]))
 
-  if (allChara && allChara.length > 1) {
+  if (allChara?.length > 1) {
     if (allChara.filter(row => row.get("is_npc")?.toUpperCase() !== "TRUE").length) {
       buttons.push(
         ...allChara.filter(row => row.get("is_npc")?.toUpperCase() !== "TRUE")
@@ -319,10 +319,6 @@ function buttons(self, allChara, factions, client) {
           }))
       )
     }
-  }
-
-  if (self) {
-    // push edit button picknose
   }
 
   return arrayChunks(buttons, 5).map(x => ({ type: 1, components: x }))

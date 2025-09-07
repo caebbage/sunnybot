@@ -269,7 +269,7 @@ function findChar(client, search, withNPC) {
   filter = list.find(val => diacritic(val.name.toLowerCase()) == diacritic(search.toLowerCase()))
   if (filter) return filter.name;
 
-  filter = fuzzy.filter(search, list, { extract: (x) => diacritic(x.full_name) })
+  filter = fuzzy.filter(search, list, { extract: (x) => diacritic(x.fullname) })
   return filter?.[0]?.original.name
 }
 

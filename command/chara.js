@@ -100,7 +100,7 @@ module.exports = {
 
       if (input.command !== "edit") {
         if (["self", "user"].includes(input.command)) {
-          profile = db.users.find(row => row.get("user_id") == input.user);
+          profile = db.users.find(row => row.get("user_id") == (input.user || input.sender));
 
           if (!profile) throw new Error("The specified user could not be found! They may not yet be registered in the system.")
 

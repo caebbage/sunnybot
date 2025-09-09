@@ -8,7 +8,7 @@ module.exports = {
   },
   async execute(client, message, input) {
     const db = client.db;
-    let inputs = input.split(" ");
+    let inputs = input?.replace(/ +/g, " ").split(" ");
 
     try {
       if (!message.member?.permissionsIn(message.channel).has(PermissionsBitField.Flags.Administrator)) { return message.react("❌") }

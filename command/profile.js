@@ -4,7 +4,7 @@ const fuzzy = require("fuzzy")
 
 module.exports = {
   name: "profile",
-  alias: ["inventory", "inv", "money"],
+  alias: ["inventory", "inv", "money", "balance", "bal"],
   prefix: true,
   slash: new SlashCommandBuilder()
     .setName('profile')

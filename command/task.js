@@ -43,8 +43,8 @@ module.exports = {
         return await input.source.reply({
           "embeds": [{
             title: `${client.config("decorative_symbol")} ${task.get("task_name").toUpperCase()} ${task.get("difficulty")}`,
-            "description": task.get("description").split("\n").map(x => `> ${x}`).join("\n")
-              + `\n\n**\`  NOTES \`**\n` + task.get("notes").split("\n").map(x => `> ${x}`).join("\n"),
+            "description": task.get("description").trim().split("\n").map(x => `> ${x}`).join("\n")
+              + `\n\n**\`  NOTES \`**\n` + task.get("notes").trim().split("\n").map(x => `> ${x}`).join("\n"),
             "fields": [
               {
                 "name": "` REWARDS `",
@@ -135,9 +135,11 @@ module.exports = {
     try {
       if (focused.value.length <= 1) await db.tasks.reload()
 
-      let filtered = (db.tasks.data?.length ? fuzzy.filter(focused.value, db.tasks.data, { extract: x => x.get("task_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') ?? "" }) : [])
-      if (filtered.length > 25) filtered.length = 25
+      let data = db.tasks.data?.filter(x => x.get("task_name"));
 
+      let filtered = (data.length ? fuzzy.filter(focused.value, data, { extract: x => x.get("task_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') ?? "" }) : [])
+      if (filtered.length > 25) filtered.length = 25
+      
       return await interaction.respond(
         filtered.map(choice => ({ name: choice.original.get("task_name"), value: choice.original.get("task_name") }))
       )
@@ -209,6 +211,7 @@ module.exports = {
 
 const rewards = (task, client) => {
   let rewardLine = [];
+  if (task.get("reward_text")) rewardLine.push(...task.get("reward_text").split("\n"))
   if (task.get("money")) rewardLine.push(money(task.get("money"), client))
   if (task.get("items")) rewardLine.push(...task.get("items").split("\n"))
 

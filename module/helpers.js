@@ -215,7 +215,9 @@ function hexList(client, faction) {
 function inventoryEmbed(profile, client) {
   return {
     title: client.config("decorative_symbol") + " INVENTORY",
-    description: (profile.get("inventory") ? profile.get("inventory") : "-# You appear to have no items!"),
+    description: (profile.get("inventory") ?
+    profile.get("inventory").split("\n").map(x => `> ${x}`).join("\n") + '\n-# Use `/item info` to see more about an item.'
+    : "-# You appear to have no items!"),
     color: color(client.config("default_color")),
     thumbnail: {
       url: client.config("default_image")

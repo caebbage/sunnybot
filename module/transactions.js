@@ -105,8 +105,6 @@ async function award(interaction, profile, chara, awarded, mode = 0, alert = fal
     else if (mode === 2) { /* no message */ }
     else if (mode === 3) { return embeds } // return embeds as-is
 
-    console.log(response.url)
-
     return await client.log(
       `**TRANSACTION:** `
       + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
@@ -114,7 +112,7 @@ async function award(interaction, profile, chara, awarded, mode = 0, alert = fal
       + "\n" + log.join("\n> \n"),
       {
         sender: interaction.user.id,
-        url: response?.resource?.message?.url
+        url: response.url
       }
     )
   }

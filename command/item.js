@@ -218,7 +218,7 @@ module.exports = {
           const getGacha = {
             money(val) {
               res.money += parseInt(val)
-              list.push(money(val, client))
+              list.push(money(val, client) + "\n> Yay, money!")
             },
             item(val) {
               let gachaItem = db.items.find(row => row.get("item_name") == val)
@@ -231,12 +231,12 @@ module.exports = {
 
                 if ((limit.hold && inventory.get(val) + 1 > limit.hold) || (limit.perma && perma.get(val) + 1 > limit.perma)) {
                   res.money += parseInt(gachaItem.get("price"))
-                  list.push(`~~${val}~~ → ${money(gachaItem.get("price"), client)}`)
+                  list.push(`📦 ~~${val}~~ → **${money(gachaItem.get("price") || 0, client)}**`)
                 } else {
                   inventory.giveItem(val)
                   res.items.giveItem(val)
                   if (gachaItem.get("perma_limit")) perma.giveItem(val)
-                  list.push(`${val} (x1)\n`
+                  list.push(`📦 **${val}** (x1)\n`
                     + gachaItem.get("description").split("\n").map(x => `> ${x}`).join("\n"))
                 }
               } else {
@@ -266,7 +266,7 @@ module.exports = {
             embeds: [itemEmbed(item, client, true),
             {
               title: `${config("decorative_symbol")} ${item.get("gacha_intro") || name}`.toUpperCase(),
-              description: list.join("\n\n"),
+              description: list.map(x => `### ${x}`).join("\n"),
               footer: {
                 text: item.get("gacha_outro")
               },

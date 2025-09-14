@@ -84,7 +84,7 @@ module.exports = async (client) => {
       
       log.send({
         embeds: [{
-          description: description
+          description: description.trim()
           + (extras.length ? ('\n\n-# ' + extras.join(" | ")) : ""),
           timestamp: new Date().toISOString()
         }]

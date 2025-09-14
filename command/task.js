@@ -42,9 +42,10 @@ module.exports = {
 
         return await input.source.reply({
           "embeds": [{
-            title: `${client.config("decorative_symbol")} ${task.get("task_name").toUpperCase()} ${task.get("difficulty")}`,
+            title: `${client.config("decorative_symbol")} ${task.get("task_name").toUpperCase()}`,
             "description": task.get("description").trim().split("\n").map(x => `> ${x}`).join("\n")
-              + `\n\n**\`  NOTES \`**\n` + task.get("notes").trim().split("\n").map(x => `> ${x}`).join("\n"),
+              + `\n\n**\`  NOTES \`**\n` + task.get("notes").trim().split("\n").map(x => `> ${x}`).join("\n")
+              + (task.get("difficulty") ? `\n> - **DIFFICULTY**: ${task.get("difficulty")}` : ""),
             "fields": [
               {
                 "name": "` REWARDS `",
@@ -60,7 +61,7 @@ module.exports = {
             ],
             image: { url: task.get("task_icon") || undefined },
             footer: {
-              "text": "SUNNY CANTILADOS",
+              "text": `SUNNY CANTILADOS`,
               "icon_url": client.config("default_image")
             },
             color: color(client.config("default_color")),

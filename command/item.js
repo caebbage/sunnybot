@@ -105,9 +105,10 @@ module.exports = {
             },
             description:
               "Use `/item info` to see an item's information,\nand `/item buy` to purchase!\n" +
+              (!shop.length ? "\n-# Nothing here yet! Check back later!" : "") +
               shop.map(
                 val => `### ${val[0]}\n` + val[1].map(
-                  item => `> \` ${item.item_name} \`   ${item.price ? money(item.price, client) : "Unmarked"}`
+                  item => `> \` ${item.item_name} \` ― ${money(item.price || "???", client)}`
                     + (item.shop_stock ? ` (${item.shop_stock} in stock)` : "")).join("\n")
               ).join("\n"),
             color: color(config("default_color")),
@@ -130,8 +131,8 @@ module.exports = {
         if (item.get("shop_stock") === "0" || (item.get("shop_stock") && +item.get("shop_stock") - amount < 0)) {
           throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThere is not enough stock.`)
 
-        } else if (!item.get("price") || item.get("in_shop") !== "TRUE") {
-          throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThe item is unpurchaseable.`)
+        } else if (!item.get("price") || isNaN(item.get("price")) || item.get("in_shop") !== "TRUE") {
+          throw new Error(`Purchase denied: cannot buy ${name}\nThe item is unpurchaseable.`)
 
         } else if (parseInt(item.get("price")) * amount > parseInt(profile.get("money"))) {
           throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nInsufficient funds. This costs ${money(parseInt(item.get("price")) * amount, client)}, and you have ${money(profile.get("money"), client)}.`)
@@ -327,7 +328,7 @@ module.exports = {
       } else if (focused.name === "buy") {
 
         let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
-        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE" && original.get("shop_stock") !== "0")
+        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE" &&  x.original.get("price") && !isNaN(x.original.get("price")) && x.original.get("shop_stock") !== "0")
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

@@ -27,8 +27,10 @@ async function pullPool(message, name, customCmd, override) {
   const data = customCmd.map(row => row.toObject()).filter(row => row.weight && row.value),
     input = (override || message.content).slice(process.env.PREFIX.length + name.length).trim()
 
-  const configData = data.find(row => row.weight === "config")?.value,
-    error = data.find(row => row.weight === "error")?.value
+  const configData = data.find(row => row.weight.toLowerCase() === "config")?.value,
+    error = data.find(row => row.weight.toLowerCase() === "error")?.value
+
+  
   var output = {
     embeds: [
       { color: color(message.client.config("default_color")) }
@@ -37,7 +39,7 @@ async function pullPool(message, name, customCmd, override) {
     options = {};
 
   if (configData) {
-    output.embeds[0] = { ...output.embeds[0], ...parseEmbed(configData.value) }
+    output.embeds[0] = { ...output.embeds[0], ...parseEmbed(configData) }
     options.multiroll = /(?<=^\*\*multiroll:\*\*) ?true$/mi.test(configData)
     options.embedFormat = /(?<=^\*\*EmbedFormat:\*\*) ?true$/mi.test(configData)
     options.tabs = /(?<=^\*\*tabs:\*\*) ?true$/mi.test(configData)

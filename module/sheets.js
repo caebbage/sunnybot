@@ -74,12 +74,18 @@ module.exports = async (client) => {
     }
   }
 
-  client.log = async function (description, sender) {
+  client.log = async function (description, extra) {
     try {
       const log = await client.channels.fetch(client.config("log_channel"));
+
+      let extras = [];
+      if (extra?.sender) extras.push(`Executed by <@${extra.sender}>`)
+      if (extra?.url) extras.push(`${extra.url}`)
+      
       log.send({
         embeds: [{
-          description: description + (sender ? (`\n\n-# Executed by <@${sender}>`) : ""),
+          description: description
+          + (extras.length ? ('\n\n-# ' + extras.join(" | ")) : ""),
           timestamp: new Date().toISOString()
         }]
       })

@@ -63,22 +63,22 @@ module.exports = {
 
     try {
       if (input.command === "profile") {
-        db.users.reload()
+        // db.users.reload()
 
-        if (db.users.find(row => row.get("user_id") == input.user)) throw new Error("This user already exists.")
+        // if (db.users.find(row => row.get("user_id") == input.user)) throw new Error("This user already exists.")
 
-        let profile = await db.users.sheet.addRow({
-          user_id: input.user.id,
-          display_name: input.user.username,
-          pronouns: "tba",
-          timezone: "GMT +?",
-          money: 0
-        })
-        await client.log(`**NEW PROFILE:** ${input.user}`, input.source.user.id)
+        // let profile = await db.users.sheet.addRow({
+        //   user_id: input.user.id,
+        //   display_name: input.user.username,
+        //   pronouns: "tba",
+        //   timezone: "GMT +?",
+        //   money: 0
+        // })
+        // await client.log(`**NEW PROFILE:** ${input.user}`, input.source.user.id)
 
-        return await input.source.reply({
-          content: `User created! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=509433378#gid=509433378>).`,
-        })
+        // return await input.source.reply({
+        //   content: `User created! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=509433378#gid=509433378>).`,
+        // })
       } else if (input.command === "chara") {
         let profile = db.users.find(row => row.get("user_id") == input.user),
           newProf = false;
@@ -92,7 +92,8 @@ module.exports = {
             money: 0
           })
           newProf = true
-          await client.log(`**NEW PROFILE:** ${input.user}`, input.source.user.id)
+          await client.log(`**NEW PROFILE:** ${input.user}`,
+            { sender: input.source.user.id })
         }
 
         if (db.charas.find(row => row.get("chara_name").toUpperCase() == input.name)) throw new Error("A character with this name already exists.")
@@ -120,13 +121,17 @@ module.exports = {
 
         let chara = await db.charas.sheet.addRow(res)
 
-        await client.log(`**NEW CHARACTER:** \`${res.chara_name}\` (${res.full_name}) (${input.user})`, input.source.user.id)
-
-        return await input.source.reply({
+        let response = await input.source.reply({
           content:
             newProf ? `User created! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=509433378#gid=509433378>).` : ""
-              + `Character ${input.name} added! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=942489959#gid=942489959>).`
+              + `Character ${input.name} added! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=942489959#gid=942489959>).`,
+          fetchReply: true
         })
+        return await client.log(`**NEW CHARACTER:** \`${res.chara_name}\` (${res.full_name}) (${input.user})`,
+          {
+            sender: input.source.user.id,
+            url: response.url
+          })
       }
     } catch (error) {
       console.log(error)

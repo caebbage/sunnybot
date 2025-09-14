@@ -60,7 +60,7 @@ module.exports = {
         .setName("amount")
         .setDescription("The amount to use of the item.")
         .setMinValue(1)
-        .setMaxValue(100)
+        .setMaxValue(10)
       )
     ),
   async parse(interaction) {
@@ -167,16 +167,16 @@ module.exports = {
         if (limit.perma) profile.set("perma_limit", perma.giveItem(name, amount).toString())
         await profile.save()
 
-
-        await client.log(
-          `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`,
-
-        )
-
-        return await input.source.reply({
+        let response = await input.source.reply({
           content: `Bought ${name} (x${amount})!`,
-          embeds: [itemEmbed(item, client, true)]
+          embeds: [itemEmbed(item, client, true)],
+          fetchReply: true
         })
+
+        return await client.log(
+          `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`,
+          { url: response.url }
+        )
 
       } else if (input.command === "use") {
         let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.use) : []
@@ -261,13 +261,7 @@ module.exports = {
           })
           await profile.save();
 
-          await client.log(
-            `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
-            + `> **money:** ${res.money >= 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n`
-            + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : "")
-          )
-
-          return await input.source.reply({
+          let response = await input.source.reply({
             content: `${name} (x${amount}) used!`,
             embeds: [itemEmbed(item, client, true),
             {
@@ -278,20 +272,30 @@ module.exports = {
               },
               color: color(config("default_color")),
               timestamp: new Date().toISOString()
-            }]
+            }],
+            fetchReply: true
           })
+
+          return await client.log(
+            `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
+            + `> **money:** ${res.money >= 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n`
+            + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : ""),
+            { url: response.url }
+          )
         } else {
           profile.set("inventory", inventory.toString())
           await profile.save()
 
-          await client.log(
-            `**ITEM USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>`
-          )
-
-          return await input.source.reply({
+          let response = await input.source.reply({
             content: `${name} (x${amount}) used!`,
-            embeds: [itemEmbed(item, interaction.user, true)]
+            embeds: [itemEmbed(item, interaction.user, true)],
+            fetchReply: true
           })
+
+          return await client.log(
+            `**ITEM USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>`,
+            { url: response.url }
+          )
         }
       }
     } catch (error) {
@@ -323,7 +327,7 @@ module.exports = {
       } else if (focused.name === "buy") {
 
         let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
-        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE")
+        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE" && original.get("shop_stock") !== "0")
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

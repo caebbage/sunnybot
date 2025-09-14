@@ -69,7 +69,7 @@ module.exports = {
         if (+giver.get("money") < input.amount) throw new Error("You don't have that much money to give!")
 
         await deduct(input.source, giver, undefined, { money: input.amount }, 1)
-        await award(input.source, receiver, undefined, { money: input.amount }, 0)
+        await award(input.source, receiver, undefined, { money: input.amount }, 0, true)
 
       } else if (input.command === "item") {
         await db.users.reload()
@@ -102,7 +102,7 @@ module.exports = {
         }
 
         await deduct(input.source, giver, undefined, { items: new Inventory(`${input.item} (x${input.amount || 1})`) }, 1)
-        await award(input.source, receiver, undefined, { items: new Inventory(`${input.item} (x${input.amount || 1})`) }, 0)
+        await award(input.source, receiver, undefined, { items: new Inventory(`${input.item} (x${input.amount || 1})`) }, 0, true)
       }
     } catch (error) {
       console.log(error);

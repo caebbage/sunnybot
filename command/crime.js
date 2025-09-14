@@ -88,20 +88,22 @@ module.exports = {
 
         let result = drawPool(crime.filter(x => x.get("type") == "success").map(x => x.toObject()))[0];
 
-        await client.log(`**CRIME:** <@${input.user}>`
-          + `\n> **Result:** Success`
-          + `\n> **Money:** +${reward} (${oldVal} → ${newVal})`
-        )
-
         await profile.save()
 
-        return await input.source.reply({
+        let response = await input.source.reply({
           embeds: [{
             description: result.description.replace("{{MONEY}}", money(reward, client))
               + `\n-# You may do more crime in <t:${Math.floor(newCooldown.valueOf() / 1000)}:R>.`,
             color: color(client.config("default_color"))
-          }]
+          }],
+          fetchReply: true
         })
+
+        return await client.log(`**CRIME:** <@${input.user}>`
+          + `\n> **Result:** Success`
+          + `\n> **Money:** +${reward} (${oldVal} → ${newVal})`,
+          { url: response.url }
+        )
       } else {
         var fine = randBetween(config.min_lost, config.max_lost);
 
@@ -113,22 +115,23 @@ module.exports = {
 
         let result = drawPool(crime.filter(x => x.get("type") == "fail").map(x => x.toObject()))[0];
 
-        await client.log(`**CRIME:** <@${input.user}>`
-          + `\n> **Result:** Fail`
-          + `\n> **Money:** -${fine} (${oldVal} → ${newVal})`
-        )
-
         await profile.save()
 
-        return await input.source.reply({
+        let response = await input.source.reply({
           embeds: [{
             description: result.description.replace("{{MONEY}}", money(fine, client))
               + `\n-# You may do more crime in <t:${Math.round(newCooldown.valueOf() / 1000)}:R>.`,
             color: color(client.config("default_color"))
-          }]
+          }],
+          fetchReply: true
         })
-      }
 
+        return await client.log(`**CRIME:** <@${input.user}>`
+          + `\n> **Result:** Fail`
+          + `\n> **Money:** -${fine} (${oldVal} → ${newVal})`,
+          { url: response.url }
+        )
+      }
     } catch (error) {
       console.log(error);
       return await input.source.reply({

@@ -1,7 +1,7 @@
 const { Inventory } = require('./inventory.js');
 const { color, money } = require("../module/helpers.js");
 
-async function award(interaction, profile, chara, awarded, mode = 0) {
+async function award(interaction, profile, chara, awarded, mode = 0, alert = false) {
   let embeds = [], log = [];
   const client = interaction.client,
     db = client.db;
@@ -90,23 +90,37 @@ async function award(interaction, profile, chara, awarded, mode = 0) {
 
   if (awarded.heat || awarded.reputation) await chara.save()
 
-  await client.log(
-    `**TRANSACTION:** `
-    + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
-    + (chara ? ` (${chara.get("chara_name")})` : "")
-    + "\n" + log.join("\n> \n"),
-    interaction.user.id
-  )
-
   // respond after
   if (embeds.length) {
-    if (mode === 0) interaction.followUp({ embeds }) // follow-up to interaction
-    else if (mode === 1) interaction.reply({ embeds }) // direct response to interaction
+    let response;
+    let msg = {
+      embeds,
+      fetchReply: true
+    }
+
+    if (alert) msg.content = `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
+
+    if (mode === 0) response = await interaction.followUp(msg) // follow-up to interaction
+    else if (mode === 1) response = await interaction.reply(msg) // direct response to interaction
     else if (mode === 2) { /* no message */ }
+    else if (mode === 3) { return embeds } // return embeds as-is
+
+    console.log(response.url)
+
+    return await client.log(
+      `**TRANSACTION:** `
+      + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
+      + (chara ? ` (${chara.get("chara_name")})` : "")
+      + "\n" + log.join("\n> \n"),
+      {
+        sender: interaction.user.id,
+        url: response?.resource?.message?.url
+      }
+    )
   }
 }
 
-async function deduct(interaction, profile, chara, deducted, mode = 0) {
+async function deduct(interaction, profile, chara, deducted, mode = 0, alert) {
   let embeds = [], log = [];
   const client = interaction.client,
     db = client.db;
@@ -187,19 +201,31 @@ async function deduct(interaction, profile, chara, deducted, mode = 0) {
 
   if (deducted.heat || deducted.reputation) await chara.save()
 
-  await client.log(
-    `**TRANSACTION:** `
-    + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
-    + (chara ? ` (${chara.get("chara_name")})` : "")
-    + "\n" + log.join("\n> \n"),
-    interaction.user.id
-  )
-
   // respond after
   if (embeds.length) {
-    if (mode === 0) return await interaction.followUp({ embeds }) // follow-up to interaction
-    else if (mode === 1) return await interaction.reply({ embeds }) // direct response to interaction
+    let response;
+    let msg = {
+      embeds,
+      fetchReply: true
+    }
+
+    if (alert) msg.content = `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
+
+    if (mode === 0) response = await interaction.followUp(msg) // follow-up to interaction
+    else if (mode === 1) response = await interaction.reply(msg) // direct response to interaction
     else if (mode === 2) { /* no message */ }
+    else if (mode === 3) { return embeds } // return embeds as-is
+
+    return await client.log(
+      `**TRANSACTION:** `
+      + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
+      + (chara ? ` (${chara.get("chara_name")})` : "")
+      + "\n" + log.join("\n> \n"),
+      {
+        sender: interaction.user.id,
+        url: response.url
+      }
+    )
   }
 }
 

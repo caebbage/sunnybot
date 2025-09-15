@@ -10,6 +10,7 @@ module.exports = {
   async execute(client, message) {
     try {
       if (!message.member?.permissionsIn(message.channel).has(PermissionsBitField.Flags.Administrator)) { return message.react("❌") }
+      let result = {};
 
       let link = /https:\/\/discord\.com\/channels\/(?<guild>.+)\/(?<channel>\d+)\/(?<message>\d+)/.exec(message.content);
       if (!link) throw new Error("Specify a link for your embed contents.")
@@ -19,14 +20,18 @@ module.exports = {
 
       let embed = parseEmbed(source.content);
 
+      result.embeds = [embed];
+
+      if (embed.content) result.content = embed.content;
+
       if (message.reference?.messageId) { // if message is a reply to something
         let replied = await message.channel.messages.fetch(message.reference.messageId);
 
         if (!replied.editable) throw new Error("Message replied to not editable.")
-        replied.edit({ embeds: [embed] })
+        replied.edit(result)
         message.delete()
       } else {
-        message.channel.send({ embeds: [embed] })
+        message.channel.send(result)
         message.delete()
       }
     } catch (error) {

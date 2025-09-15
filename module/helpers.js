@@ -321,7 +321,8 @@ function parseEmbed(src) {
   let res = {};
   res.title = /(?<=^\*\*Title:\*\*)(.+)$/mi.exec(src)?.[0]?.trim()
   res.color = color(/(?<=^\*\*Color:\*\*)(.+)$/mi.exec(src)?.[0]?.trim())
-  res.description = /(?<=^\*\*Description:\*\*)((.*\n)*.*)/mi.exec(src)?.[0].trim()
+  res.content = /(?<=^\*\*Content:\*\*)(.+)$/mi.exec(src)?.[0].trim()
+  res.description = /(?<=^\*\*Description:\*\*)(.+)$/smi.exec(src)?.[0].trim()
 
   let author = {
     icon_url: /(?<=^\*\*AuthorPic:\*\*)(.+)$/mi.exec(src)?.[0]?.trim()?.replace(/[<>]/g, ""),

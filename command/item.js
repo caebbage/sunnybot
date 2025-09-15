@@ -113,7 +113,8 @@ module.exports = {
               ).join("\n"),
             color: color(config("default_color")),
             timestamp: new Date().toISOString()
-          }]
+          }],
+          flags: (input.hide ? MessageFlags.Ephemeral : undefined)
         })
 
       } else if (input.command === "buy") {

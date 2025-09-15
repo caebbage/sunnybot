@@ -163,9 +163,18 @@ module.exports = {
           item.set("shop_stock", parseInt(item.get("shop_stock")) - amount)
           await item.save()
         }
+
+        let money = {};
+
+        money.old = +(profile.get("money") || 0)
+        money.deduct = amount * item.get("price")
+        money.new = money.old - money.deduct
+
+        profile.set("money", money.new)
         profile.set("inventory", inventory.giveItem(name, amount).toString())
         if (limit.monthly) profile.set("monthly_limit", monthly.giveItem(name, amount).toString())
         if (limit.perma) profile.set("perma_limit", perma.giveItem(name, amount).toString())
+        
         await profile.save()
 
         let response = await input.source.reply({
@@ -175,7 +184,8 @@ module.exports = {
         })
 
         return await client.log(
-          `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`,
+          `**ITEM BOUGHT:** \` ${name} \` x${amount} by <@${profile.get("user_id")}>`
+          + `\n> **money:** -${money.deduct} (${money.old} → ${money.new})`,
           { url: response.url }
         )
 

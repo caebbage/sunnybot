@@ -128,14 +128,21 @@ module.exports = {
         const name = item.get("item_name"),
           amount = input.amount ?? 1;
 
+        let moneyChange = {};
+
+        moneyChange.old = +(profile.get("money") || 0)
+        moneyChange.deduct = amount * item.get("price")
+        moneyChange.new = moneyChange.old - moneyChange.deduct
+
         if (item.get("shop_stock") === "0" || (item.get("shop_stock") && +item.get("shop_stock") - amount < 0)) {
           throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThere is not enough stock.`)
 
         } else if (!item.get("price") || isNaN(item.get("price")) || item.get("in_shop") !== "TRUE") {
           throw new Error(`Purchase denied: cannot buy ${name}\nThe item is unpurchaseable.`)
 
-        } else if (parseInt(item.get("price")) * amount > parseInt(profile.get("money"))) {
-          throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nInsufficient funds. This costs ${money(parseInt(item.get("price")) * amount, client)}, and you have ${money(profile.get("money"), client)}.`)
+        } else if (moneyChange.new < 0) {
+          throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nInsufficient funds. `
+            + `This costs ${money(moneyChange.deduct, client)}, and you have ${money(moneyChange.old, client)}.`)
 
         }
 
@@ -164,17 +171,11 @@ module.exports = {
           await item.save()
         }
 
-        let money = {};
-
-        money.old = +(profile.get("money") || 0)
-        money.deduct = amount * item.get("price")
-        money.new = money.old - money.deduct
-
-        profile.set("money", money.new)
+        profile.set("money", moneyChange.new)
         profile.set("inventory", inventory.giveItem(name, amount).toString())
         if (limit.monthly) profile.set("monthly_limit", monthly.giveItem(name, amount).toString())
         if (limit.perma) profile.set("perma_limit", perma.giveItem(name, amount).toString())
-        
+
         await profile.save()
 
         let response = await input.source.reply({
@@ -185,7 +186,7 @@ module.exports = {
 
         return await client.log(
           `**ITEM BOUGHT:** \` ${name} \` x${amount} by <@${profile.get("user_id")}>`
-          + `\n> **money:** -${money.deduct} (${money.old} → ${money.new})`,
+          + `\n> **money:** -${moneyChange.deduct} (${moneyChange.old} → ${moneyChange.new})`,
           { url: response.url }
         )
 
@@ -313,7 +314,7 @@ module.exports = {
       console.log(error);
       return await input.source.reply({
         content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# ${x}`).join("\n"),
-        // flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral
       })
     }
   },
@@ -338,7 +339,7 @@ module.exports = {
       } else if (focused.name === "buy") {
 
         let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
-        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE" &&  x.original.get("price") && !isNaN(x.original.get("price")) && x.original.get("shop_stock") !== "0")
+        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE" && x.original.get("price") && !isNaN(x.original.get("price")) && x.original.get("shop_stock") !== "0")
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

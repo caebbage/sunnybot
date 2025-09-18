@@ -1,230 +1,243 @@
 const { Inventory } = require('./inventory.js');
-const { color, money } = require("../module/helpers.js");
 
-async function award(interaction, profile, chara, awarded, mode = 0, alert = false) {
-  let embeds = [], log = [];
+async function award(interaction, target, change) {
+  let log = [];
   const client = interaction.client,
     db = client.db;
 
-  if (!awarded.money && !awarded.items && !awarded.heat && !awarded.reputation) throw new Error("No changes given.")
+  let profile = target.profile, chara = target.chara;
 
-  if (awarded.money) {
-    if (!profile) throw new Error("Profile not found to give money to.")
+  try {
+    if (!change.money && !change.items && !change.heat && !change.reputation) throw new Error("No changes given.")
 
-    const oldVal = parseInt(profile.get("money") || 0),
-      newVal = oldVal + awarded.money;
+    if ((change.money || change.items) && !profile) throw new Error("Profile not found.")
 
-    profile.set("money", newVal)
-    log.push(`> **money:** +${awarded.money} (${oldVal} → ${newVal})`)
-    embeds.push({
-      description: `<@${profile.get("user_id")}> has received ${money(awarded.money, client)}!`,
-      color: color(client.config("default_color"))
-    })
-  }
-  if (awarded.items && !awarded.items.isEmpty()) {
-    if (!profile) throw new Error("Profile not found to give items to.")
+    if (change.money) {
+      const oldVal = +profile.get("money") || 0,
+        newVal = oldVal + change.money;
 
-    let inventory = new Inventory(profile.get("inventory")),
-      permaLimit = new Inventory(profile.get("perma_limit"));
-
-    for (let entry of awarded.items.entries()) {
-      const name = entry[0], amount = entry[1],
-        item = db.items.find(row => row.get("item_name") == name)
-
-      if (!item) throw new Error(`Item \`${name}\` not found!`)
-      limit = {
-        hold: parseInt(item.get("hold_limit")) || null,
-        perma: parseInt(item.get("perma_limit")) || null
-      }
-
-      if (limit.hold && inventory.get(name) + amount > limit.hold) {
-        throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and the user currently holds ${inventory.get(name)}.`)
-      } else if (limit.perma && permaLimit.get(name) + amount > limit.perma) {
-        throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's lifetime limit is ${limit.perma}, and the user has had ${perma.get(name)}.`)
-      }
-
-      if (limit.perma) permaLimit.giveItem(name, amount)
+      profile.set("money", newVal)
+      log.push(`> **money:** +${change.money} (${oldVal} → ${newVal})`)
     }
 
-    profile.set("inventory", inventory.give(awarded.items).toString());
-    profile.set("perma_limit", permaLimit.toString());
+    if (change.items && !change.items.isEmpty()) {
+      let inventory = new Inventory(profile.get("inventory")),
+        permaLimit = new Inventory(profile.get("perma_limit"));
 
-    log.push(`> **item gain:**\n` + awarded.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
-    embeds.push({
-      description: `<@${profile.get("user_id")}> has gained the following item(s):\n`
-        + awarded.items.toString().split("\n").map(x => `> ${x}`).join("\n"),
-      color: color(client.config("default_color"))
-    })
-  }
+      for (let entry of change.items.entries()) {
+        const name = entry[0], amount = entry[1],
+          item = db.items.find(row => row.get("item_name") == name)
 
-  if (awarded.money || awarded.items) await profile.save()
+        if (!item) throw new Error(`Item \`${name}\` not found!`)
+        limit = {
+          hold: +item.get("hold_limit") || null,
+          perma: +item.get("perma_limit") || null
+        }
 
-  if (awarded.heat) {
-    if (!chara) throw new Error("Character not found to give Heat to.")
+        if (limit.hold && inventory.get(name) + amount > limit.hold) {
+          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and the user currently holds ${inventory.get(name)}.`)
+        } else if (limit.perma && permaLimit.get(name) + amount > limit.perma) {
+          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's lifetime limit is ${limit.perma}, and the user has had ${permaLimit.get(name)}.`)
+        }
 
-    const oldVal = parseInt(chara.get("heat") || 0),
-      newVal = oldVal + awarded.heat;
-    if (newVal > client.config("heat_cap")) throw new Error(`Transaction would exceed Heat cap (${client.config("heat_cap")}).`)
+        if (limit.perma) permaLimit.giveItem(name, amount)
+      }
 
-    chara.set("heat", newVal)
-    log.push(`> **heat:** +${awarded.heat} (${oldVal} → ${newVal})`)
-    embeds.push({
-      description: `**${chara.get("chara_name")}** has earned ${awarded.heat} Heat!`,
-      color: color(client.config("default_color"))
-    })
-  }
-  if (awarded.reputation) {
-    if (!chara) throw new Error("Character not found to give Reputation to.")
+      profile.set("inventory", inventory.give(change.items).toString());
+      profile.set("perma_limit", permaLimit.toString());
 
-    const oldVal = parseInt(chara.get("reputation") || 0),
-      newVal = oldVal + awarded.reputation;
-    if (newVal > client.config("reputation_cap")) throw new Error(`Transaction would exceed Reputation cap (${client.config("reputation_cap")}).`)
-
-    chara.set("reputation", newVal)
-    log.push(`> **reputation:** +${awarded.reputation} (${oldVal} → ${newVal})`)
-    embeds.push({
-      description: `**${chara.get("chara_name")}** has earned ${awarded.reputation} Reputation!`,
-      color: color(client.config("default_color"))
-    })
-  }
-
-  if (awarded.heat || awarded.reputation) await chara.save()
-
-  // respond after
-  if (embeds.length) {
-    let response;
-    let msg = {
-      embeds,
-      fetchReply: true
+      log.push(`> **item gain:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
     }
 
-    if (alert) msg.content = `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
+    if (change.money || change.items) await profile.save()
 
-    if (mode === 0) response = await interaction.followUp(msg) // follow-up to interaction
-    else if (mode === 1) response = await interaction.reply(msg) // direct response to interaction
-    else if (mode === 2) { /* no message */ }
-    else if (mode === 3) { return embeds } // return embeds as-is
 
-    return await client.log(
-      `**TRANSACTION:** `
-      + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
-      + (chara ? ` (${chara.get("chara_name")})` : "")
-      + "\n" + log.join("\n> \n"),
-      {
-        sender: interaction.user.id,
-        url: response.url
-      }
-    )
+    if ((change.heat || change.reputation || change.statuses) && !chara) throw new Error("Character not found.")
+    if (change.heat) {
+      const oldVal = +chara.get("heat") || 0,
+        newVal = oldVal + change.heat;
+      if (newVal > client.config("heat_cap")) throw new Error(`Transaction would exceed Heat cap (${client.config("heat_cap")}).`)
+
+      chara.set("heat", newVal)
+      log.push(`> **heat:** +${change.heat} (${oldVal} → ${newVal})`)
+    }
+
+    if (change.reputation) {
+      const oldVal = +chara.get("reputation") || 0,
+        newVal = oldVal + change.reputation;
+      if (newVal > client.config("reputation_cap")) throw new Error(`Transaction would exceed Reputation cap (${client.config("reputation_cap")}).`)
+
+      chara.set("reputation", newVal)
+      log.push(`> **reputation:** +${change.reputation} (${oldVal} → ${newVal})`)
+    }
+
+    if (change.heat || change.reputation || change.statuses) await chara.save()
+
+    return {
+      success: true,
+      log
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error
+    }
   }
 }
 
-async function deduct(interaction, profile, chara, deducted, mode = 0, alert) {
-  let embeds = [], log = [];
+async function deduct(interaction, target, change) {
+  let log = [];
   const client = interaction.client,
     db = client.db;
 
-  if (!deducted.money && !deducted.items && !deducted.heat && !deducted.reputation) throw new Error("No changes given.")
+  let profile = target.profile, chara = target.chara;
 
-  if (deducted.money) {
-    if (!profile) throw new Error("Profile not found take money from.")
+  try {
+    if (!change.money && !change.items && !change.heat && !change.reputation) throw new Error("No changes given.")
 
-    const oldVal = parseInt(profile.get("money")),
-      newVal = oldVal - deducted.money;
-    if (newVal < 0) throw new Error("Not enough money to take.")
+    if ((change.money || change.items) && !profile) throw new Error("Profile not found.")
 
-    profile.set("money", newVal)
-    log.push(`> **money:** -${deducted.money} (${oldVal} → ${newVal})`)
-    embeds.push({
-      description: `<@${profile.get("user_id")}> has lost ${money(deducted.money, client)}.`,
-      color: color(client.config("default_color"))
-    })
-  }
+    if (change.money) {
+      const oldVal = +profile.get("money"),
+        newVal = oldVal - change.money;
+      if (newVal < 0) throw new Error(`Not enough money to take. (User has ${oldVal}.)`)
 
-  if (deducted.items && !deducted.items.isEmpty()) {
-    if (!profile) throw new Error("Profile not found to take items from.")
-
-    let inventory = new Inventory(profile.get("inventory"))
-
-    for (let entry of deducted.items.entries()) {
-      const name = entry[0], amount = entry[1],
-        item = db.items.find(row => row.get("item_name") == name)
-
-      if (!item) throw new Error(`Item \`${name}\` not found!`)
-      if (!inventory.hasItem(name, amount)) throw new Error(`Insufficient item \`${name}\`!`)
+      profile.set("money", newVal)
+      log.push(`> **money:** -${change.money} (${oldVal} → ${newVal})`)
     }
 
-    profile.set("inventory", inventory.take(deducted.items).toString());
+    if (change.items && !change.items.isEmpty()) {
+      let inventory = new Inventory(profile.get("inventory"))
 
-    log.push(`> **item loss:**\n` + deducted.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
+      for (let entry of change.items.entries()) {
+        const name = entry[0], amount = entry[1],
+          item = db.items.find(row => row.get("item_name") == name)
 
-    embeds.push({
-      description: `<@${profile.get("user_id")}> has lost the following item(s):\n`
-        + deducted.items.toString().split("\n").map(x => `> ${x}`).join("\n"),
-      color: color(client.config("default_color"))
-    })
-  }
-
-
-  if (deducted.money || deducted.items) await profile.save()
-
-  if (deducted.heat) {
-    if (!chara) throw new Error("Character not found to take Heat from.")
-
-    const oldVal = parseInt(chara.get("heat")),
-      newVal = oldVal - deducted.heat;
-    if (newVal < 0) throw new Error("Character doesn't have enough Heat to lose.")
-
-    chara.set("heat", newVal)
-    log.push(`> **heat:** -${deducted.heat} (${oldVal} → ${newVal})`)
-    embeds.push({
-      description: `**${chara.get("chara_name")}** has lost ${deducted.heat} Heat!`,
-      color: color(client.config("default_color"))
-    })
-  }
-
-  if (deducted.reputation) {
-    if (!chara) throw new Error("Character not found take Reputation from.")
-
-    const oldVal = parseInt(chara.get("reputation")),
-      newVal = oldVal - deducted.reputation;
-    if (newVal < 0) throw new Error("Character doesn't have enough Reputation to lose.")
-
-    chara.set("reputation", newVal)
-    log.push(`> **reputation:** -${deducted.reputation} (${oldVal} → ${newVal})`)
-    embeds.push({
-      description: `**${chara.get("chara_name")}** has lost ${deducted.reputation} Reputation!`,
-      color: color(client.config("default_color"))
-    })
-  }
-
-  if (deducted.heat || deducted.reputation) await chara.save()
-
-  // respond after
-  if (embeds.length) {
-    let response;
-    let msg = {
-      embeds,
-      fetchReply: true
-    }
-
-    if (alert) msg.content = `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
-
-    if (mode === 0) response = await interaction.followUp(msg) // follow-up to interaction
-    else if (mode === 1) response = await interaction.reply(msg) // direct response to interaction
-    else if (mode === 2) { /* no message */ }
-    else if (mode === 3) { return embeds } // return embeds as-is
-
-    return await client.log(
-      `**TRANSACTION:** `
-      + `<@${profile?.get("user_id") || chara?.get("owner_id")}>`
-      + (chara ? ` (${chara.get("chara_name")})` : "")
-      + "\n" + log.join("\n> \n"),
-      {
-        sender: interaction.user.id,
-        url: response.url
+        if (!item) throw new Error(`Item \`${name}\` not found!`)
+        if (!inventory.hasItem(name, amount)) throw new Error(`Insufficient item ${name}!`)
       }
-    )
+
+      profile.set("inventory", inventory.take(change.items).toString());
+
+      log.push(`> **item loss:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
+    }
+
+    if (change.money || change.items) await profile.save()
+
+
+    if ((change.heat || change.reputation || change.statuses) && !chara) throw new Error("Character not found.")
+    if (change.heat) {
+      const oldVal = +chara.get("heat"),
+        newVal = oldVal - change.heat;
+      if (newVal < 0) throw new Error("Character doesn't have enough Heat to lose.")
+
+      chara.set("heat", newVal)
+      log.push(`> **heat:** -${change.heat} (${oldVal} → ${newVal})`)
+    }
+    if (change.reputation) {
+      const oldVal = +chara.get("reputation"),
+        newVal = oldVal - change.reputation;
+      if (newVal < 0) throw new Error("Character doesn't have enough Reputation to lose.")
+
+      chara.set("reputation", newVal)
+      log.push(`> **reputation:** -${change.reputation} (${oldVal} → ${newVal})`)
+    }
+
+    if (change.heat || change.reputation || change.statuses) await chara.save()
+
+    return {
+      success: true,
+      log
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error
+    }
   }
 }
 
-module.exports = { award, deduct }
+async function transfer(interaction, giver, receiver, change) {
+  let log = { giver: [], receiver: [] };
+  const client = interaction.client,
+    db = client.db;
+
+  try {
+    if (!change.money && !change.items && !change.heat && !change.reputation) throw new Error("No changes given.")
+
+    if ((change.money || change.items) && (!giver.profile || !receiver.profile)) throw new Error("Profile not found.")
+
+    if (change.money) {
+      const give = {
+        old: +giver.profile.get("money"),
+      }, receive = {
+        old: +receiver.profile.get("money")
+      }
+      give.new = give.old - change.money;
+      receive.new = receive.old + change.money;
+
+      if (give.new < 0) throw new Error("Not enough money to transfer.")
+
+      giver.profile.set("money", give.new)
+      receiver.profile.set("money", receive.new)
+
+      log.giver.push(`> **money:** -${change.money} (${give.old} → ${give.new})`)
+      log.receiver.push(`> **money:** +${change.money} (${receive.old} → ${receive.new})`)
+    }
+
+    if (change.items && !change.items.isEmpty()) {
+      if (!giver.profile || !receiver.profile) throw new Error("Profile not found.")
+
+      let giverInv = new Inventory(giver.profile.get("inventory"))
+      let receiverInv = new Inventory(receiver.profile.get("inventory")),
+        permaLimit = new Inventory(receiver.profile.get("perma_limit"));
+
+      for (let entry of change.items.entries()) {
+        const name = entry[0], amount = entry[1],
+          item = db.items.find(row => row.get("item_name") == name)
+
+        if (!item) throw new Error(`Item \`${name}\` not found!`)
+
+        if (giverInv.get(name) < amount) throw new Error(`Insufficient item ${name}! The giver holds ${giverInv.get(name)}.`)
+
+        limit = {
+          hold: +item.get("hold_limit") || null,
+          perma: +item.get("perma_limit") || null
+        }
+
+        if (limit.hold && receiverInv.get(name) + amount > limit.hold) {
+          throw new Error(`Transaction denied: cannot transfer ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and the user currently holds ${receiverInv.get(name)}.`)
+        } else if (limit.perma && permaLimit.get(name) + amount > limit.perma) {
+          throw new Error(`Transaction denied: cannot transfer ${amount} of ${name}\nThe item's lifetime limit is ${limit.perma}, and the user has had ${permaLimit.get(name)}.`)
+        }
+      }
+
+      giver.profile.set("inventory", giverInv.take(change.items).toString());
+      receiver.profile.set("inventory", receiverInv.give(change.items).toString());
+      receiver.profile.set("perma_limit", permaLimit.toString());
+
+      log.giver.push(`> **item loss:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
+      log.receiver.push(`> **item gain:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
+    }
+
+    if (change.money || change.items) {
+      await giver.profile.save()
+      await receiver.profile.save()
+    }
+
+    if (change.heat || change.reputation) await chara.save()
+
+    return {
+      success: true,
+      log
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+module.exports = { award, deduct, transfer }

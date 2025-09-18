@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
-  { award, deduct } = require("../module/transactions.js"),
+  { color, money, itemEmbed } = require("../module/helpers.js"),
+  { transfer } = require("../module/transactions.js"),
   { Inventory } = require('../module/inventory.js'),
   fuzzy = require("fuzzy");
 
@@ -17,8 +18,8 @@ module.exports = {
         .setRequired(true)
       )
       .addIntegerOption(option => option
-        .setName("amount")
-        .setDescription("The amount of Cred to receive.")
+        .setName("money")
+        .setDescription("The amount of Cred to gift.")
         .setMinValue(1)
         .setRequired(true)
       )
@@ -33,13 +34,13 @@ module.exports = {
       )
       .addStringOption(option => option
         .setName("item")
-        .setDescription("The item to receive.")
+        .setDescription("The item to gift.")
         .setAutocomplete(true)
         .setRequired(true)
       )
       .addIntegerOption(option => option
-        .setName("amount")
-        .setDescription("The number of items to receive.")
+        .setName("item-amt")
+        .setDescription("The amount of the item to gift.")
         .setMinValue(1)
       )
     ),
@@ -49,68 +50,80 @@ module.exports = {
       command: interaction.options.getSubcommand(),
       giver: interaction.user.id,
       receiver: interaction.options.getUser("user")?.id,
+      money: interaction.options.getInteger("money"),
       item: interaction.options.getString("item"),
-      amount: interaction.options.getInteger("amount") ?? 1
+      itemAmt: interaction.options.getInteger("amount") ?? 1
     })
   },
   async execute(client, input) {
     const db = client.db;
 
+
     try {
-      if (input.command === "money") {
+      let giver = {}, receiver = {},
+        change = {
+          money: input.money
+        };
+
+      if (input.item) change.items = new Inventory(`${input.item} (x${input.amount || 1})`);
+
+      if (["money", "item", "to-user"].includes(input.command)) {
         await db.users.reload()
-        const giver = db.users.find(row => row.get("user_id") == input.giver);
-        const receiver = db.users.find(row => row.get("user_id") == input.receiver);
+        giver.profile = db.users.find(row => row.get("user_id") == input.giver)
+        receiver.profile = db.users.find(row => row.get("user_id") == input.receiver);
+      }
 
-        if (!giver) throw new Error("You don't have a profile to be gifting from!")
-        if (!receiver) throw new Error("The user you're giving to doesn't yet exist! They may need to be registered by mods.")
-        if (input.giver === input.receiver) throw new Error("You're trying to gift things to yourself!")
+      const result = await transfer(input.source, giver, receiver, change);
 
-        if (+giver.get("money") < input.amount) throw new Error("You don't have that much money to give!")
+      if (result.success) {
+        let embeds = [];
 
-        await deduct(input.source, giver, undefined, { money: input.amount }, 1)
-        await award(input.source, receiver, undefined, { money: input.amount }, 0, true)
+        if (change.money) {
+          embeds.push({
+            description: `<@${input.giver}> has gifted **${money(input.money, client)}** to <@${input.receiver}>!`,
+            color: color(client.config("default_color"))
+          })
+        }
+        if (change.items) {
+          let item = db.items.find(row => row.get("item_name") == input.item);
 
-      } else if (input.command === "item") {
-        await db.users.reload()
-        await db.items.reload()
-        const giver = db.users.find(row => row.get("user_id") == input.giver);
-        const receiver = db.users.find(row => row.get("user_id") == input.receiver);
-
-        if (!giver) throw new Error("You don't have an inventory to be gifting from!")
-        if (!receiver) throw new Error("The user you're giving to doesn't yet exist! They may need to be registered by mods.")
-
-        const name = input.item, amount = input.amount || 1,
-          item = db.items.find(row => row.get("item_name") == name)
-        if (!item) throw new Error(`Item \`${name}\` not found!`)
-
-        let giverInv = new Inventory(giver.get("inventory"));
-        if (giverInv.get(name) < amount) throw new Error("You do not have enough of the specified item to be gifting!")
-
-        let receiverInv = new Inventory(receiver.get("inventory")),
-          permaLimit = new Inventory(receiver.get("perma_limit"));
-
-        let limit = {
-          hold: parseInt(item.get("hold_limit")) || null,
-          perma: parseInt(item.get("perma_limit")) || null
+          embeds.push({
+            description: `<@${input.giver}> has gifted **${input.item} (x${input.itemAmt || 1})** to <@${input.receiver}>!`,
+            color: color(client.config("default_color"))
+          },
+            itemEmbed(item, client, true))
         }
 
-        if (limit.hold && receiverInv.get(name) + amount > limit.hold) {
-          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and the user currently holds ${receiverInv.get(name)}.`)
-        } else if (limit.perma && permaLimit.get(name) + amount > limit.perma) {
-          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's lifetime limit is ${limit.perma}, and the user has had ${perma.get(name)}.`)
-        }
+        const response = await input.source.reply({
+          content: `<@${input.receiver}>`,
+          embeds,
+          fetchReply: true
+        });
 
-        await deduct(input.source, giver, undefined, { items: new Inventory(`${input.item} (x${input.amount || 1})`) }, 1)
-        await award(input.source, receiver, undefined, { items: new Inventory(`${input.item} (x${input.amount || 1})`) }, 0, true)
+        return await client.log(
+          `**GIFTING:** `
+          + `<@${input.giver}>`
+          + "\n" + result.log.giver.join("\n> \n")
+          + `\n\n**RECEIVING:** `
+          + `<@${input.receiver}>`
+          + "\n" + result.log.receiver.join("\n> \n"),
+          {
+            sender: input.source.user.id,
+            url: response.url
+          }
+        )
+      } else {
+        return await input.source.reply({
+          content: "Transaction failed:\n-# `" + result.error.message + "`",
+          flags: MessageFlags.Ephemeral
+        })
       }
     } catch (error) {
       console.log(error);
-      if (input.source.replied || input.source.deferred) {
-        await input.source.followUp({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
-      } else {
-        await input.source.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
-      }
+      return await input.source.reply({
+        content: "An error occurred:\n-# `" + error.message + "`",
+        flags: MessageFlags.Ephemeral
+      })
     }
   },
 

@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
+  { color, money } = require("../module/helpers.js"),
   { deduct } = require("../module/transactions.js"),
   { Inventory } = require('../module/inventory.js'),
   fuzzy = require("fuzzy");
@@ -18,7 +19,7 @@ module.exports = {
         .setRequired(true)
       )
       .addIntegerOption(option => option
-        .setName("amount")
+        .setName("money")
         .setDescription("The amount of Cred to take.")
         .setMinValue(1)
         .setRequired(true)
@@ -39,7 +40,7 @@ module.exports = {
         .setRequired(true)
       )
       .addIntegerOption(option => option
-        .setName("amount")
+        .setName("item-amt")
         .setDescription("The number of items to take.")
         .setMinValue(1)
       )
@@ -54,10 +55,11 @@ module.exports = {
         .setRequired(true)
       )
       .addIntegerOption(option => option
-        .setName("amount")
+        .setName("heat")
         .setDescription("The amount of Heat to take.")
         .setMinValue(1)
         .setMaxValue(5)
+        .setRequired(true)
       )
     )
     .addSubcommand(subcommand => subcommand
@@ -70,55 +72,210 @@ module.exports = {
         .setRequired(true)
       )
       .addIntegerOption(option => option
-        .setName("amount")
+        .setName("rep")
         .setDescription("The amount of Reputation to take.")
         .setMinValue(1)
         .setMaxValue(9999)
         .setRequired(true)
       )
-    ),
+    )
+    .addSubcommand(subcommand => subcommand
+      .setName("from-user")
+      .setDescription("Take multiple things from a user at once.")
+      .addUserOption(option => option
+        .setName("user")
+        .setDescription("The user losing things.")
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option
+        .setName("money")
+        .setDescription("The amount of Money to take.")
+        .setMinValue(1)
+      )
+      .addStringOption(option => option
+        .setName("item")
+        .setDescription("The item to remove.")
+        .setAutocomplete(true)
+      )
+      .addIntegerOption(option => option
+        .setName("item-amt")
+        .setDescription("How much of an item to take. (Default 1)")
+        .setMinValue(1)
+      )
+    )
+    .addSubcommand(subcommand => subcommand
+      .setName("from-chara")
+      .setDescription("Take multiple things from a character at once.")
+      .addStringOption(option => option
+        .setName("chara")
+        .setDescription("The character losing things.")
+        .setAutocomplete(true)
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option
+        .setName("heat")
+        .setDescription("The amount of Heat to lose.")
+        .setMinValue(1)
+        .setMaxValue(5)
+      )
+      .addIntegerOption(option => option
+        .setName("rep")
+        .setDescription("The amount of Reputation to lose.")
+        .setMinValue(1)
+        .setMaxValue(9999)
+      )
+      .addStringOption(option => option
+        .setName("status")
+        .setDescription("A status to remove from the character.")
+      )
+    )
+    .addSubcommand(subcommand => subcommand
+      .setName("from-user-chara")
+      .setDescription("Take multiple things from a character at once. (The user will be the owner of this character.)")
+      .addStringOption(option => option
+        .setName("chara")
+        .setDescription("The character losing things.")
+        .setAutocomplete(true)
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option
+        .setName("money")
+        .setDescription("The amount of Money to take.")
+        .setMinValue(1)
+      )
+      .addStringOption(option => option
+        .setName("item")
+        .setDescription("The item to remove.")
+        .setAutocomplete(true)
+      )
+      .addIntegerOption(option => option
+        .setName("item-amt")
+        .setDescription("How much of an item to take. (Default 1)")
+        .setMinValue(1)
+      )
+      .addIntegerOption(option => option
+        .setName("heat")
+        .setDescription("The amount of Heat to lose.")
+        .setMinValue(1)
+        .setMaxValue(5)
+      )
+      .addIntegerOption(option => option
+        .setName("rep")
+        .setDescription("The amount of Reputation to lose.")
+        .setMinValue(1)
+        .setMaxValue(9999)
+      )
+      .addStringOption(option => option
+        .setName("status")
+        .setDescription("A status to remove from the character.")
+      )
+    )
+  ,
   async parse(interaction) {
     return await this.execute(interaction.client, {
       source: interaction,
       command: interaction.options.getSubcommand(),
       user: interaction.options.getUser("user")?.id,
       chara: interaction.options.getString("chara"),
+
+      money: interaction.options.getInteger("money"),
       item: interaction.options.getString("item"),
-      amount: interaction.options.getInteger("amount") ?? 1
+      itemAmt: interaction.options.getInteger("item-amt") || 1,
+
+      heat: interaction.options.getInteger("heat"),
+      reputation: interaction.options.getInteger("rep"),
+      status: interaction.options.getString("status")
     })
   },
   async execute(client, input) {
-    const db = client.db
+    const db = client.db;
+    let target = {},
+      change = {
+        money: input.money,
+        heat: input.heat,
+        reputation: input.reputation,
+        statuses: input.status
+      };
+
+    if (input.item) change.items = new Inventory(`${input.item} (x${input.amount || 1})`);
 
     try {
-      if (input.command === "money") {
+      if (["money", "item", "from-user"].includes(input.command)) {
         await db.users.reload()
-        const profile = db.users.find(row => row.get("user_id") == input.user);
+        target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
-        return await deduct(input.source, profile, undefined, { money: input.amount }, 1)
-
-      } else if (input.command === "item") {
-        await db.users.reload()
-        await db.items.reload()
-        const profile = db.users.find(row => row.get("user_id") == input.user);
-
-        return await deduct(input.source, profile, undefined, { items: new Inventory(`${input.item} (x${input.amount || 1})`) }, 1)
-
-      } else if (input.command === "heat") {
+      } else if (["heat", "reputation", "from-chara", "from-user-chara"].includes(input.command)) {
         await db.charas.reload()
-        let chara = db.charas.find(row => row.get("chara_name") == input.chara);
+        target.chara = db.charas.find(row => row.get("chara_name") == input.chara);
 
-        return await deduct(input.source, undefined, chara, { heat: input.amount }, 1)
+        if (["from-user-chara"].includes(input.command)) {
+          input.user = target.chara.get("owner_id");
 
-      } else if (input.command === "reputation") {
-        await db.charas.reload()
-        let chara = db.charas.find(row => row.get("chara_name") == input.chara);
+          await db.users.reload()
+          target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
+        }
+      }
 
-        return await deduct(input.source, undefined, chara, { reputation: input.amount }, 1)
+      const result = await deduct(input.source, target, change);
+
+
+      if (result.success) {
+        let embeds = [];
+
+        if (target.profile) {
+          if (change.money) {
+            embeds.push({
+              description: `<@${profile.get("user_id")}> has lost **${money(input.money, client)}**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+          if (change.items) {
+            embeds.push({
+              description: `<@${profile.get("user_id")}> has lost **${input.item} (x${input.itemAmt || 1})**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+        }
+
+        if (target.chara) {
+          if (change.heat) {
+            embeds.push({
+              description: `**${input.chara}** has lost **${input.heat} Heat**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+          if (change.reputation) {
+            embeds.push({
+              description: `**${input.chara}** has lost **${input.reputation} Reputation!**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+        }
+
+        const response = await input.source.reply({
+          embeds,
+          fetchReply: true
+        });
+
+        return await client.log(
+          `**TRANSACTION:** `
+          + `<@${target.profile?.get("user_id") || target.chara?.get("owner_id")}>`
+          + (target.chara ? ` (${target.chara.get("chara_name")})` : "")
+          + "\n" + result.log.join("\n> \n"),
+          {
+            sender: input.source.user.id,
+            url: response.url
+          }
+        )
+      } else {
+        return await input.source.reply({
+          content: "Transaction failed:\n-# `" + result.error.message + "`",
+          flags: MessageFlags.Ephemeral
+        })
       }
     } catch (error) {
       console.log(error);
-      await input.source.reply({
+      return await input.source.reply({
         content: "An error occurred:\n-# `" + error.message + "`",
         flags: MessageFlags.Ephemeral
       })

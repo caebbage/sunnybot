@@ -18,7 +18,7 @@ module.exports = {
     ),
 
   async parse(interaction, message, inputs) {
-    return await this.execute(interaction, {
+    return await this.execute(interaction.client, {
         source: interaction,
         name: interaction.options.getString("name"),
         hide: interaction.options.getBoolean("hide") ?? false
@@ -30,6 +30,7 @@ module.exports = {
     try {
       if (!input.name) throw new Error("Provide a name for the status!")
 
+      await db.statuses.reload();
       let status = db.statuses?.find(row => row.get("status_name") == input.name);
 
       if (!status) throw new Error("The specified status could not be found!")

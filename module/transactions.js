@@ -72,7 +72,7 @@ async function award(interaction, target, change) {
 
     if (change.statuses) {
       let statuses = chara.get("statuses").split(", ").map(x => x.trim()),
-        newStatuses = change.statuses.split("\n").map(x => x.trim())
+        newStatuses = change.statuses.split(", ").map(x => x.trim())
 
       statuses.push(...newStatuses);
 
@@ -154,7 +154,7 @@ async function deduct(interaction, target, change) {
 
     if (change.statuses) {
       let statuses = chara.get("statuses").split(", ").map(x => x.trim()),
-        removeStatuses = change.statuses.split("\n").map(x => x.trim());
+        removeStatuses = change.statuses.split(", ").map(x => x.trim());
       
       statuses = statuses.filter(x => !removeStatuses.includes(x))
 

@@ -186,7 +186,7 @@ module.exports = {
         })
 
         return await client.log(
-          `**ITEM BOUGHT:** \` ${name} \` x${amount} by <@${profile.get("user_id")}>`
+          `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`
           + `\n> **money:** -${moneyChange.deduct} (${moneyChange.old} → ${moneyChange.new})`,
           { url: response.url }
         )
@@ -196,6 +196,8 @@ module.exports = {
 
         if (!item) throw new Error("The specified item could not be found!")
 
+        if (item.get("protected")?.toUpperCase() === "TRUE") throw new Error("This item is unusable; ping mods if you'd like to toss it!")
+        
         await db.users.reload()
         let profile = db.users.find(row => row.get("user_id") == input.user)
         if (!profile) throw new Error("Your user profile could not be found!")
@@ -210,10 +212,10 @@ module.exports = {
           inventory.takeItem(name, amount)
         } catch (error) {
           console.log(error)
-          throw new Error(`Transaction denied: cannot take ${amount} of ${name}\nThe user does not possess enough of such item.`)
+          throw new Error(`Transaction denied: cannot use ${amount} of ${name}\nYou don't have that many!`)
         }
 
-        if (item.get("category") == "Gacha") {
+        if (item.get("category") == "Gacha" && item.get("gacha_src")) {
           let src = client.sheets.config.src;
           if (!src.sheetsById[item.get("gacha_src")]) src.loadInfo()
 
@@ -226,7 +228,8 @@ module.exports = {
             money: 0,
             items: new Inventory()
           },
-            list = [];
+            list = [],
+            mult = (+item.get("gacha_amount") || 1);
 
           const getGacha = {
             money(val) {
@@ -237,6 +240,8 @@ module.exports = {
               let gachaItem = db.items.find(row => row.get("item_name") == val)
 
               if (gachaItem) {
+                let ico = gachaItem.get("emoji") || client.config("default_item_emoji")
+
                 let limit = {
                   hold: parseInt(gachaItem.get("hold_limit") || 0),
                   perma: parseInt(gachaItem.get("perma_limit") || 0)
@@ -244,13 +249,14 @@ module.exports = {
 
                 if ((limit.hold && inventory.get(val) + 1 > limit.hold) || (limit.perma && perma.get(val) + 1 > limit.perma)) {
                   res.money += parseInt(gachaItem.get("price"))
-                  list.push(`📦 ~~${val}~~ → **${money(gachaItem.get("price") || 0, client)}**`)
+                  list.push(`~~${ico} ${val}~~ → **${money(gachaItem.get("price") || 0, client)}**`)
                 } else {
                   inventory.giveItem(val)
                   res.items.giveItem(val)
                   if (gachaItem.get("perma_limit")) perma.giveItem(val)
-                  list.push(`📦 **${val}** (x1)\n`
-                    + gachaItem.get("description").split("\n").map(x => `> ${x}`).join("\n"))
+                  list.push(`${ico} ${val} (x1)\n`
+                    + ((mult == 1) ? gachaItem.get("description").split("\n").map(x => `> ${x}`).join("\n") : "")
+                  )
                 }
               } else {
                 list.push(`~~${val}~~`)
@@ -261,7 +267,7 @@ module.exports = {
             }
           }
 
-          drawPool(gacha, amount).forEach(res => {
+          drawPool(gacha, amount * mult).forEach(res => {
             getGacha[res.type]?.(res.value)
           })
 
@@ -291,7 +297,7 @@ module.exports = {
 
           return await client.log(
             `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
-            + `> **money:** ${res.money >= 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n`
+            + (res.money != 0 ? + `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n` : "")
             + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : ""),
             { url: response.url }
           )
@@ -340,7 +346,7 @@ module.exports = {
       } else if (focused.name === "buy") {
 
         let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
-        filtered = filtered.filter(x => x.original.get("in_shop") == "TRUE" && x.original.get("price") && !isNaN(x.original.get("price")) && x.original.get("shop_stock") !== "0")
+        filtered = filtered.filter(x => x.original.get("in_shop")?.toUpperCase() == "TRUE" && x.original.get("price") && !isNaN(x.original.get("price")) && x.original.get("shop_stock") !== "0")
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -352,7 +358,9 @@ module.exports = {
 
         profile = db.users.find(row => row.get("user_id") == interaction.user.id) ?? null;
 
-        let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let filtered = db.items.data.length ? fuzzy.filter(
+          focused.value, db.items.data.filter(x => x.get("item_name") && x.get("protected")?.toUpperCase() !== "TRUE"),
+          { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
         if (profile) filtered = filtered.filter(item => new Inventory(profile.get("inventory")).hasItem(item.original.get("item_name")))
         if (filtered.length > 25) filtered.length = 25
 

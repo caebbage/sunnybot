@@ -17,8 +17,35 @@ module.exports = {
 
     isEmpty() { return Object.keys(this.data).length == 0 }
 
-    entries() {return Object.entries(this.data) }
+    entries() { return Object.entries(this.data) }
+
+    forEach(forEach) { return this.entries().forEach(item => forEach(item[0], item[1])) }
+    find(find) { return this.entries().find(item => find(item[0], item[1])) }
+    map(map) { return this.entries().map(item => map(item[0], item[1])) }
+
+    checkLimit(monthly, perma) {
+      let over = {};
+
+      this.forEach((item, amt) => {
+        let m = monthly.get(item), p = perma.get(item);
+
+        if (amt > Math.max(m, p)) over[item] = amt - Math.max(m, p)
+      })
+
+      return over
+    }
+
     toString() { return Object.entries(this.data).map(x => `${x[0]} (x${x[1]})`).join("\n") }
+
+    toIcoString(client) {
+      let items = client.db.items.filter(x => x.get("item_name"))
+
+      return Object.entries(this.data).map(item => {
+        let ico = items.find(i => i.get("item_name") == item[0])?.get("emoji") || client.config("default_item_emoji")
+
+        return `${ico} ${item[0]} (x${item[1]})`
+      }).join("\n")
+    }
 
     has(find) {
       for (let [item, amt] of (find.entries?.() || find)) {
@@ -26,7 +53,7 @@ module.exports = {
       }
       return true
     }
-    
+
     hasItem(item, amt = 1) {
       if (this.get(item) - amt < 0) return false
       return true
@@ -58,7 +85,7 @@ module.exports = {
       if (this.hasItem(item, amt)) {
         this.data[item] -= amt
       } else throw new Error("The requested item is not available!")
-      
+
       return this.clean()
     }
 

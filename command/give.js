@@ -196,7 +196,7 @@ module.exports = {
         statuses: input.status
       };
 
-    if (input.item) change.items = new Inventory(`${input.item} (x${input.amount || 1})`);
+    if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
     try {
       if (["money", "item", "to-user"].includes(input.command)) {

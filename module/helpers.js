@@ -1,4 +1,5 @@
-const fuzzy = require("fuzzy");
+const fuzzy = require("fuzzy"),
+  { Inventory } = require("../module/inventory.js");
 
 const money = (amt, client) => client.config("money_format").replace("{{MONEY}}", amt)
 
@@ -216,8 +217,9 @@ function inventoryEmbed(profile, client) {
   return {
     title: client.config("decorative_symbol") + " INVENTORY",
     description: (profile.get("inventory") ?
-    profile.get("inventory").split("\n").map(x => `> ${x}`).join("\n") + '\n-# Use `/item info` to see more about an item.'
-    : "-# You appear to have no items!"),
+      (new Inventory(profile.get("inventory"))).toIcoString(client).split("\n").map(x => `> ${x}`).join("\n")
+      + '\n\n-# Use `/item info` to see more about an item.'
+      : "-# You appear to have no items!"),
     color: color(client.config("default_color")),
     thumbnail: {
       url: client.config("default_image")
@@ -228,7 +230,7 @@ function inventoryEmbed(profile, client) {
 
 function itemEmbed(item, client, simple = false) {
   return {
-    title: `${client.config("decorative_symbol")} ${item.get("item_name").toUpperCase()}`,
+    title: `${item.get("emoji") || client.config("default_item_emoji")} ${item.get("item_name").toUpperCase()}`,
     description: (!simple ? `**\`   CATEGORY \`** ${item.get("category")}\n**\`       COST \`** ${item.get("price") ? `${money(item.get("price"), client)}` : "N/A"
       }\n` : "")
       + (item.get("description")?.split("\n").map(x => `> ${x}`).join("\n") ?? "> *No description found.*"),

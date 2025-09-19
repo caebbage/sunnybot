@@ -24,9 +24,8 @@ async function award(interaction, target, change) {
       let inventory = new Inventory(profile.get("inventory")),
         permaLimit = new Inventory(profile.get("perma_limit"));
 
-      for (let entry of change.items.entries()) {
-        const name = entry[0], amount = entry[1],
-          item = db.items.find(row => row.get("item_name") == name)
+      for (let [name, amount] of change.items.entries()) {
+        const item = db.items.find(row => row.get("item_name") == name)
 
         if (!item) throw new Error(`Item \`${name}\` not found!`)
         limit = {
@@ -110,9 +109,8 @@ async function deduct(interaction, target, change) {
     if (change.items && !change.items.isEmpty()) {
       let inventory = new Inventory(profile.get("inventory"))
 
-      for (let entry of change.items.entries()) {
-        const name = entry[0], amount = entry[1],
-          item = db.items.find(row => row.get("item_name") == name)
+      for (let [name, amount] of change.items.entries()) {
+        const item = db.items.find(row => row.get("item_name") == name)
 
         if (!item) throw new Error(`Item \`${name}\` not found!`)
         if (!inventory.hasItem(name, amount)) throw new Error(`Insufficient item ${name}!`)
@@ -193,9 +191,8 @@ async function transfer(interaction, giver, receiver, change) {
       let receiverInv = new Inventory(receiver.profile.get("inventory")),
         permaLimit = new Inventory(receiver.profile.get("perma_limit"));
 
-      for (let entry of change.items.entries()) {
-        const name = entry[0], amount = entry[1],
-          item = db.items.find(row => row.get("item_name") == name)
+      for (let [name, amount] of change.items.entries()) {
+        const item = db.items.find(row => row.get("item_name") == name)
 
         if (!item) throw new Error(`Item \`${name}\` not found!`)
 

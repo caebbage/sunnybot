@@ -212,7 +212,7 @@ function statusMods(statuses) {
       default: ansi = 37; break;
     }
 
-    res += `\n[2;37m【 [1;${ansi}m${status.name}[2;37m 】${hasMods ? ":" : ""}[0m`
+    res += `\n[2;37m【 [1;${ansi}m${status.name.toUpperCase()}[2;37m 】${hasMods ? ":" : ""}[0m`
 
     statNames.forEach(stat => {
       if (status[stat]) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} ${status[stat] >= 0 ? "+" : ""}${status[stat]} ❱[0m`;

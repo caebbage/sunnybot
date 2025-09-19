@@ -76,7 +76,7 @@ async function award(interaction, target, change) {
 
       statuses.push(...newStatuses);
 
-      chara.set("statuses", statuses.filter(x => x).join(", "))
+      chara.set("statuses", [...new Set(statuses.filter(x => x).join(", "))])
       log.push(`> **status:** Gained ` + newStatuses.filter(x => x).map(x => `\`${x.trim()}\``).join(", "))
     }
 
@@ -158,7 +158,7 @@ async function deduct(interaction, target, change) {
       
       statuses = statuses.filter(x => !removeStatuses.includes(x))
 
-      chara.set("statuses", statuses.filter(x => x).join(", "))
+      chara.set("statuses", [...new Set(statuses.filter(x => x).join(", "))])
       log.push(`> **status:** Lost ` + removeStatuses.map(x => `\`${x.trim()}\``).join(", "))
     }
 

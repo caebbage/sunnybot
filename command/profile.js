@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { userEmbed, charaEmbed, inventoryEmbed, findChar, arrayChunks } = require("../module/helpers.js")
+const { userEmbed, inventoryEmbed } = require("../module/helpers.js")
 const fuzzy = require("fuzzy")
 
 module.exports = {

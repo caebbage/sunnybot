@@ -80,6 +80,22 @@ module.exports = {
       )
     )
     .addSubcommand(subcommand => subcommand
+      .setName("status")
+      .setDescription("Take a Status from a character.")
+      .addStringOption(option => option
+        .setName("chara")
+        .setDescription("The character losing a status.")
+        .setAutocomplete(true)
+        .setRequired(true)
+      )
+      .addStringOption(option => option
+        .setName("status")
+        .setDescription("The status to take.")
+        .setAutocomplete(true)
+        .setRequired(true)
+      )
+    )
+    .addSubcommand(subcommand => subcommand
       .setName("from-user")
       .setDescription("Take multiple things from a user at once.")
       .addUserOption(option => option
@@ -101,32 +117,6 @@ module.exports = {
         .setName("item-amt")
         .setDescription("How much of an item to take. (Default 1)")
         .setMinValue(1)
-      )
-    )
-    .addSubcommand(subcommand => subcommand
-      .setName("from-chara")
-      .setDescription("Take multiple things from a character at once.")
-      .addStringOption(option => option
-        .setName("chara")
-        .setDescription("The character losing things.")
-        .setAutocomplete(true)
-        .setRequired(true)
-      )
-      .addIntegerOption(option => option
-        .setName("heat")
-        .setDescription("The amount of Heat to lose.")
-        .setMinValue(1)
-        .setMaxValue(5)
-      )
-      .addIntegerOption(option => option
-        .setName("rep")
-        .setDescription("The amount of Reputation to lose.")
-        .setMinValue(1)
-        .setMaxValue(9999)
-      )
-      .addStringOption(option => option
-        .setName("status")
-        .setDescription("A status to remove from the character.")
       )
     )
     .addSubcommand(subcommand => subcommand
@@ -167,7 +157,8 @@ module.exports = {
       )
       .addStringOption(option => option
         .setName("status")
-        .setDescription("A status to remove from the character.")
+        .setDescription("The status to take.")
+        .setAutocomplete(true)
       )
     )
   ,
@@ -204,7 +195,7 @@ module.exports = {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
-      } else if (["heat", "reputation", "from-chara", "from-user-chara"].includes(input.command)) {
+      } else if (["heat", "reputation", "status", "from-user-chara"].includes(input.command)) {
         await db.charas.reload()
         target.chara = db.charas.find(row => row.get("chara_name") == input.chara);
 
@@ -250,6 +241,13 @@ module.exports = {
               color: color(client.config("default_color"))
             })
           }
+
+          if (change.statuses) {
+            embeds.push({
+              description: `**${input.chara}** has lost **${change.statuses}!**!`,
+              color: color(client.config("default_color"))
+            })
+          }
         }
 
         const response = await input.source.reply({
@@ -290,7 +288,10 @@ module.exports = {
       if (focused.name === "chara") {
         if (focused.value.length <= 1) await db.charas.reload()
 
-        let filtered = db.charas.data?.length ? fuzzy.filter(focused.value, db.charas.data, { extract: x => (x.get("chara_name") + " // " + x.get("full_name")).normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let data = db.charas.filter(x => x.get("chara_name"))
+        if (interaction.options.getSubcommand() == "status") data = data.filter(x => x.get("statuses"))
+
+        let filtered = fuzzy.filter(focused.value, data, { extract: x => (x.get("chara_name") + " // " + x.get("full_name")).normalize('NFD').replace(/\p{Diacritic}/gu, '') })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -305,6 +306,19 @@ module.exports = {
 
         return await interaction.respond(
           filtered.map(choice => ({ name: choice.original[0], value: choice.original[0] }))
+        )
+      } else if (focused.name === "status") {
+        if (focused.value.length <= 1) await db.charas.reload()
+
+        let chara = db.charas.find(x => x.get("chara_name") == interaction.options.get("chara")?.value);
+
+        let statuses = chara ? chara.get("statuses").split(", ").filter(x => x) : [];
+
+        let filtered = fuzzy.filter(focused.value, statuses, { extract: x => x.normalize('NFD').replace(/\p{Diacritic}/gu, '') })
+        if (filtered.length > 25) filtered.length = 25
+
+        return await interaction.respond(
+          filtered.map(choice => ({ name: choice.original, value: choice.original }))
         )
       }
     } catch (error) {

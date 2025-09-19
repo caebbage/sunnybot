@@ -8,7 +8,7 @@ async function award(interaction, target, change) {
   let profile = target.profile, chara = target.chara;
 
   try {
-    if (!change.money && !change.items && !change.heat && !change.reputation) throw new Error("No changes given.")
+    if (!change.money && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
     if ((change.money || change.items) && !profile) throw new Error("Profile not found.")
 
@@ -70,6 +70,16 @@ async function award(interaction, target, change) {
       log.push(`> **reputation:** +${change.reputation} (${oldVal} → ${newVal})`)
     }
 
+    if (change.statuses) {
+      let statuses = chara.get("statuses").split(", ").map(x => x.trim()),
+        newStatuses = change.statuses.split("\n").map(x => x.trim())
+
+      statuses.push(...newStatuses);
+
+      chara.set("statuses", statuses.filter(x => x).join(", "))
+      log.push(`> **status:** Gained ` + newStatuses.filter(x => x).map(x => `\`${x.trim()}\``).join(", "))
+    }
+
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {
@@ -93,7 +103,7 @@ async function deduct(interaction, target, change) {
   let profile = target.profile, chara = target.chara;
 
   try {
-    if (!change.money && !change.items && !change.heat && !change.reputation) throw new Error("No changes given.")
+    if (!change.money && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
     if ((change.money || change.items) && !profile) throw new Error("Profile not found.")
 
@@ -140,6 +150,16 @@ async function deduct(interaction, target, change) {
 
       chara.set("reputation", newVal)
       log.push(`> **reputation:** -${change.reputation} (${oldVal} → ${newVal})`)
+    }
+
+    if (change.statuses) {
+      let statuses = chara.get("statuses").split(", ").map(x => x.trim()),
+        removeStatuses = change.statuses.split("\n").map(x => x.trim());
+      
+      statuses = statuses.filter(x => !removeStatuses.includes(x))
+
+      chara.set("statuses", statuses.filter(x => x).join(", "))
+      log.push(`> **status:** Lost ` + removeStatuses.map(x => `\`${x.trim()}\``).join(", "))
     }
 
     if (change.heat || change.reputation || change.statuses) await chara.save()

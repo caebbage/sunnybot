@@ -1,6 +1,8 @@
 const fuzzy = require("fuzzy"),
   { Inventory } = require("../module/inventory.js");
 
+const statNames = ["hot", "cool", "hard", "sharp"]
+
 const money = (amt, client) => client.config("money_format").replace("{{MONEY}}", amt)
 
 function userEmbed(profile, client) {
@@ -17,17 +19,25 @@ function userEmbed(profile, client) {
 }
 
 function charaEmbed(chara, client) {
-  const faction = client.db.factions.find(x => x.get("faction_name") == chara.get("faction"));
-  let turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"))
+  const faction = client.db.factions.find(x => x.get("faction_name") == chara.get("faction")),
+    turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")),
+    statuses = client.db.statuses.filter(x => x.get("status_name") && chara.get("statuses").split(", ").includes(x.get("status_name")));
 
-  let bonuses = sumBonus(turfs);
 
-  let stats = {
-    hot: (!isNaN(+chara.get("hot")) ? +chara.get("hot") : 0) + bonuses.hot + (!isNaN(+faction.get("hot")) ? +faction.get("hot") : 0),
-    cool: (!isNaN(+chara.get("cool")) ? +chara.get("cool") : 0) + bonuses.cool + (!isNaN(+faction.get("cool")) ? +faction.get("cool") : 0),
-    hard: (!isNaN(+chara.get("hard")) ? +chara.get("hard") : 0) + bonuses.hard + (!isNaN(+faction.get("hard")) ? +faction.get("hard") : 0),
-    sharp: (!isNaN(+chara.get("sharp")) ? +chara.get("sharp") : 0) + bonuses.sharp + (!isNaN(+faction.get("sharp")) ? +faction.get("sharp") : 0)
-  }
+  const bonuses = {
+    base: {
+      hot: +chara.get("hot") || 0,
+      cool: +chara.get("cool") || 0,
+      hard: +chara.get("hard") || 0,
+      sharp: +chara.get("sharp") || 0,
+      other: []
+    },
+    turf: parseBonus(turfs, "turf_id"),
+    status: parseBonus(statuses, "status_name"),
+    faction: parseBonus([faction], "faction_name")
+  };
+
+  let stats = sumBonus([bonuses.base, ...bonuses.turf, ...bonuses.status, ...bonuses.faction])
 
   let result = {
     title: (faction.get("pin_emoji") || faction.get("simple_emoji")) + " " + chara.get("full_name").toUpperCase(),
@@ -45,13 +55,17 @@ function charaEmbed(chara, client) {
         : "")
       + `\n\n\`   REP \` ${chara.get("reputation")}\n\`  HEAT \` ${chara.get("heat")}/5`
       + "\n\n```ansi\n"
-      + colorStats(arrayChunks(["hot", "cool", "hard", "sharp"].map(stat =>
-        pad(`${pad(stat.toUpperCase(), 5)} ${stats[stat] >= 0 ? "+" : ""}${stats[stat]}`, 15, " ", true)
-      ), 2).map(x => x.join("")).join("\n"))
+      + colorStats(arrayChunks(
+        statNames.map(stat =>
+          pad(`${pad(stat.toUpperCase(), 5)} ${stats[stat] >= 0 ? "+" : ""}${stats[stat]}`, 15, " ", true)
+        ), 2).map(x => x.join("")).join("\n"))
       + "```"
-      + "\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) +
-      (turfBonus(faction, client) ? "\n\n" + turfBonus(faction, client) : "") + "```"
-      + "\n-# Stat bonuses are already added to the stats block."
+      + "\n> **STAT MODIFIERS:**\n" + "```ansi\n"
+      + factionBonus(faction, client)
+      + (bonuses.turf?.length ? "\n\n" + turfBonus(bonuses.turf) : "")
+      + (bonuses.status?.length ? "\n\n" + statusMods(bonuses.status) : "")
+      + "```"
+      + "\n-# Stat modifiers are already added to the stats block."
     ,
     color: color((chara.get("is_npc")?.toUpperCase() !== "TRUE" ? faction.get("main_color") : false) || client.config("default_color")),
     thumbnail: {
@@ -108,49 +122,106 @@ function factionEmbed(faction, client) {
 function factionBonus(faction) {
   let res = `[2;37m【 [1;${faction.get("ansi_color")}m${faction.get("faction_name").toUpperCase()} ${faction.get("simple_emoji")} [0m[2;37mTier ${faction.get("tier").toUpperCase()} 】:[0m `;
 
-  if (faction.get("hot")) res += `\n[2;37m  ‣[2;30m ❰ HOT +${faction.get("hot")} ❱[0m`;
-  if (faction.get("cool")) res += `\n[2;37m  ‣[2;30m ❰ COOL +${faction.get("cool")} ❱[0m`;
-  if (faction.get("hard")) res += `\n[2;37m  ‣[2;30m ❰ HARD +${faction.get("hard")} ❱[0m`;
-  if (faction.get("sharp")) res += `\n[2;37m  ‣[2;30m ❰ SHARP +${faction.get("sharp")} ❱[0m`;
+  statNames.forEach(stat => {
+    if (faction.get(stat)) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} +${faction.get(stat)} ❱[0m`;
+  })
   if (faction.get("misc_bonus")) res += "\n" + faction.get("misc_bonus").split("\n").map(x => `[2;37m  ‣[0m` + x).join("\n")
 
   return res
 }
 
-function sumBonus(turfs) {
-  let bonuses = { hot: 0, cool: 0, hard: 0, sharp: 0, other: {} };
-  turfs.forEach(turf => {
-    ["hot", "cool", "hard", "sharp"].forEach(stat => {
-      bonuses[stat] += turf.get(stat) && !isNaN(+turf.get(stat)) ? +turf.get(stat) : 0
-    })
+function parseBonus(list, nameParam) {
+  let bonuses = []
 
-    turf.get("misc_bonus")?.split("\n").filter(x => x).forEach(bonus => {
-      if (bonuses.other[bonus]) bonuses.other[bonus]++
-      else bonuses.other[bonus] = 1
-    })
+  bonuses = list.map(bonus => {
+    let res = { name: bonus.get(nameParam), hot: 0, cool: 0, hard: 0, sharp: 0, other: [], original: bonus };
+
+    if (!res.name) return false
+
+    statNames.forEach(stat => res[stat] += +bonus.get(stat) || 0)
+
+    if (bonus.get("misc_bonus")?.trim()) {
+      res.other.push(...bonus.get("misc_bonus").split("\n").map(x => x.trim()).filter(x => x))
+    }
+
+    return res
   })
-  return bonuses
+
+  return bonuses.filter(x => x)
 }
 
-function turfBonus(faction, client) {
-  let turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"))
+function sumBonus(bonuses) {
+  let sum = { hot: 0, cool: 0, hard: 0, sharp: 0, other: {} };
 
-  if (!turfs.length) return;
+  bonuses.reduce((total, curr) => {
+    statNames.forEach(stat => {
+      total[stat] += curr[stat]
+    })
 
-  let bonuses = sumBonus(turfs);
+    curr.other?.forEach(bonus => {
+      if (total.other[bonus]) total.other[bonus]++
+      else total.other[bonus] = 1
+    })
 
-  let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${turfs.length}[0m[2;37m turfs:[0m`
+    return total
+  }, sum)
 
-  if (bonuses.hot) res += `\n[2;37m  ‣[2;30m ❰ HOT +${bonuses.hot} ❱[0m`
-  if (bonuses.cool) res += `\n[2;37m  ‣[2;30m ❰ COOL +${bonuses.cool} ❱[0m`
-  if (bonuses.hard) res += `\n[2;37m  ‣[2;30m ❰ HARD +${bonuses.hard} ❱[0m`
-  if (bonuses.sharp) res += `\n[2;37m  ‣[2;30m ❰ SHARP +${bonuses.sharp} ❱[0m`
+  return sum
+}
+
+function turfBonus(bonuses, faction) {
+  if (!bonuses.length) return;
+
+  let total = sumBonus(bonuses);
+
+  let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${bonuses.length}[0m[2;37m turfs:[0m`
+
+  statNames.forEach(stat => {
+    if (total[stat]) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} +${total[stat]} ❱[0m`;
+  })
 
   if ((Object.keys(bonuses.other).length)) {
-    res += "\n" + Object.entries(bonuses.other).map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
+    res += "\n" + Object.entries(total.other).map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
   }
 
   return res
+}
+
+function statusEmbed(status, client) {
+  return {
+    title: `${client.config("decorative_symbol")} ${status.get("status_name").toUpperCase()}`,
+    description: (status.get("description")?.split("\n").map(x => `> ${x}`).join("\n") ?? "> *No description found.*"),
+    color: color(client.config("default_color")),
+    thumbnail: { url: client.config("default_image") }
+  }
+}
+
+function statusMods(statuses) {
+  let res = "";
+
+  statuses.forEach(status => {
+    let color = status.original.get("color"), ansi,
+      hasMods = !!(status.hot || status.cool || status.hard || status.sharp || status.other?.length);;
+
+    switch (color) {
+      case "red": ansi = 31; break;
+      case "yellow": ansi = 33; break;
+      case "green": ansi = 36; break;
+      case "blue": ansi = 34; break;
+      case "pink": ansi = 35; break;
+      default: ansi = 37; break;
+    }
+
+    res += `\n[2;37m【 [1;${ansi}m${status.name}[2;37m 】${hasMods ? ":" : ""}[0m`
+
+    statNames.forEach(stat => {
+      if (status[stat]) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} ${status[stat] >= 0 ? "+" : ""}${status[stat]} ❱[0m`;
+    })
+
+    res += "\n" + status.other.map(x => `[2;37m  ‣[2;30m ${x}[0m`).join("\n");
+  })
+
+  return res?.trim()
 }
 
 function hexList(client, faction) {
@@ -383,6 +454,7 @@ module.exports = {
   money,
   userEmbed, charaEmbed, factionEmbed,
   inventoryEmbed, itemEmbed,
+  statusEmbed,
   hexList,
   findChar, diacritic,
   parseEmbed, formatEmbed,

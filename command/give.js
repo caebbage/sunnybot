@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
-  { color, money, itemEmbed } = require("../module/helpers.js"),
+  { color, money, itemEmbed, statusEmbed } = require("../module/helpers.js"),
   { award } = require("../module/transactions.js"),
   { Inventory } = require('../module/inventory.js'),
   fuzzy = require("fuzzy");
@@ -79,6 +79,22 @@ module.exports = {
       )
     )
     .addSubcommand(subcommand => subcommand
+      .setName("status")
+      .setDescription("Give a Status to a character.")
+      .addStringOption(option => option
+        .setName("chara")
+        .setDescription("The character gaining a status.")
+        .setAutocomplete(true)
+        .setRequired(true)
+      )
+      .addStringOption(option => option
+        .setName("status")
+        .setDescription("The status to give.")
+        .setAutocomplete(true)
+        .setRequired(true)
+      )
+    )
+    .addSubcommand(subcommand => subcommand
       .setName("to-user")
       .setDescription("Give multiple things to a user at once.")
       .addUserOption(option => option
@@ -100,32 +116,6 @@ module.exports = {
         .setName("item-amt")
         .setDescription("How much of an item to give. (Default 1)")
         .setMinValue(1)
-      )
-    )
-    .addSubcommand(subcommand => subcommand
-      .setName("to-chara")
-      .setDescription("Give multiple things to a character at once.")
-      .addStringOption(option => option
-        .setName("chara")
-        .setDescription("The character gaining things.")
-        .setAutocomplete(true)
-        .setRequired(true)
-      )
-      .addIntegerOption(option => option
-        .setName("heat")
-        .setDescription("The amount of Heat to give.")
-        .setMinValue(1)
-        .setMaxValue(5)
-      )
-      .addIntegerOption(option => option
-        .setName("rep")
-        .setDescription("The amount of Reputation to give.")
-        .setMinValue(1)
-        .setMaxValue(9999)
-      )
-      .addStringOption(option => option
-        .setName("status")
-        .setDescription("A status to give the character.")
       )
     )
     .addSubcommand(subcommand => subcommand
@@ -167,7 +157,8 @@ module.exports = {
       )
       .addStringOption(option => option
         .setName("status")
-        .setDescription("A status to give the character.")
+        .setDescription("The status to give.")
+        .setAutocomplete(true)
       )
     ),
   async parse(interaction) {
@@ -203,7 +194,7 @@ module.exports = {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
-      } else if (["heat", "reputation", "to-chara", "to-user-chara"].includes(input.command)) {
+      } else if (["heat", "reputation", "status", "to-user-chara"].includes(input.command)) {
         await db.charas.reload()
         target.chara = db.charas.find(row => row.get("chara_name") == input.chara);
 
@@ -252,6 +243,15 @@ module.exports = {
               color: color(client.config("default_color"))
             })
           }
+        }
+
+        if (change.statuses) {
+          let status = db.statuses.find(x => x.get("status_name") == change.statuses)
+
+          embeds.push({
+            description: `**${input.chara}** has gained **${change.statuses}!**!`,
+            color: color(client.config("default_color"))
+          }, statusEmbed(status, client))
         }
 
         const response = await input.source.reply({
@@ -306,6 +306,16 @@ module.exports = {
 
         return await interaction.respond(
           filtered.map(choice => ({ name: choice.original.get("item_name"), value: choice.original.get("item_name") }))
+        )
+      } else if (focused.name === "status") {
+        if (focused.value.length <= 1) await db.statuses.reload()
+        let data = db.statuses.filter(x => x.get("status_name"))
+
+        let filtered = fuzzy.filter(focused.value, data, { extract: x => x.get("status_name").normalize('NFD').replace(/\p{Diacritic}/gu, '') })
+        if (filtered.length > 25) filtered.length = 25
+
+        return await interaction.respond(
+          filtered.map(choice => ({ name: choice.original.get("status_name"), value: choice.original.get("status_name") }))
         )
       }
     } catch (error) {

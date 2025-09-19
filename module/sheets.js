@@ -62,7 +62,7 @@ module.exports = async (client) => {
     return res
   }
 
-  for (let sheet of ["users", "charas", "factions", "turf", "items", "tasks", "work", "crime", "reactroles"]) {
+  for (let sheet of ["users", "charas", "factions", "turf", "items", "tasks", "work", "crime", "reactroles", "statuses"]) {
     client.db[sheet] = await setup(client.config(`${sheet}_sheet`))
   }
 

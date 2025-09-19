@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { userEmbed, charaEmbed } = require("../module/helpers.js")
 
 module.exports = {
   name: "new",

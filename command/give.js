@@ -249,7 +249,7 @@ module.exports = {
           let status = db.statuses.find(x => x.get("status_name") == change.statuses)
 
           embeds.push({
-            description: `**${input.chara}** has gained **${change.statuses}!**!`,
+            description: `**${input.chara}** has gained **${change.statuses}**!`,
             color: color(client.config("default_color"))
           }, statusEmbed(status, client))
         }

@@ -244,7 +244,7 @@ module.exports = {
 
           if (change.statuses) {
             embeds.push({
-              description: `**${input.chara}** has lost **${change.statuses}!**!`,
+              description: `**${input.chara}** has lost **${change.statuses}**!`,
               color: color(client.config("default_color"))
             })
           }

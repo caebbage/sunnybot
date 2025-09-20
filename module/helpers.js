@@ -21,7 +21,7 @@ function userEmbed(profile, client) {
 function charaEmbed(chara, client) {
   const faction = client.db.factions.find(x => x.get("faction_name") == chara.get("faction")),
     turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")),
-    statuses = client.db.statuses.filter(x => x.get("status_name") && chara.get("statuses").split(", ").includes(x.get("status_name")));
+    statuses = client.db.statuses.filter(x => x.get("status_name") && chara.get("statuses")?.split(", ").includes(x.get("status_name")));
 
 
   const bonuses = {

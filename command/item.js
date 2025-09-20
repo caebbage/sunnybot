@@ -297,7 +297,7 @@ module.exports = {
 
           return await client.log(
             `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
-            + (res.money != 0 ? + `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n` : "")
+            + (res.money != 0 ? `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n` : "")
             + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : ""),
             { url: response.url }
           )

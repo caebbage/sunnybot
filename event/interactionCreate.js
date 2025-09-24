@@ -18,11 +18,13 @@ module.exports = {
         await command.parse(interaction);
       } catch (error) {
         console.error(error);
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
-        } else {
-          await interaction.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
-        }
+        try {
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+          } else {
+            await interaction.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+          }
+        } catch (err) {console.log("  Interaction no longer exists!")}
       }
     } else if (interaction.isAutocomplete()) {
       const command = client.commands.get(interaction.commandName);

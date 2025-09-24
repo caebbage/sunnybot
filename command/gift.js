@@ -52,7 +52,7 @@ module.exports = {
       receiver: interaction.options.getUser("user")?.id,
       money: interaction.options.getInteger("money"),
       item: interaction.options.getString("item"),
-      itemAmt: interaction.options.getInteger("amount") ?? 1
+      itemAmt: interaction.options.getInteger("item-amt") ?? 1
     })
   },
   async execute(client, input) {
@@ -65,7 +65,7 @@ module.exports = {
           money: input.money
         };
 
-      if (input.item) change.items = new Inventory(`${input.item} (x${input.amount || 1})`);
+      if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
       if (["money", "item", "to-user"].includes(input.command)) {
         await db.users.reload()

@@ -180,7 +180,7 @@ module.exports = {
         await profile.save()
 
         let response = await input.source.reply({
-          content: `Bought ${name} (x${amount})!`,
+          content: `Bought **${name} (x${amount})**!`,
           embeds: [itemEmbed(item, client, true)],
           fetchReply: true
         })
@@ -192,6 +192,8 @@ module.exports = {
         )
 
       } else if (input.command === "use") {
+        let response = await input.source.deferReply({ fetchReply: true });
+
         let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.use) : []
 
         if (!item) throw new Error("The specified item could not be found!")
@@ -280,8 +282,8 @@ module.exports = {
           })
           await profile.save();
 
-          let response = await input.source.reply({
-            content: `${name} (x${amount}) used!`,
+          await input.source.editReply({
+            content: `**${name} (x${amount})** used!`,
             embeds: [itemEmbed(item, client, true),
             {
               title: `${config("decorative_symbol")} ${item.get("gacha_intro") || name}`.toUpperCase(),
@@ -291,8 +293,7 @@ module.exports = {
               },
               color: color(config("default_color")),
               timestamp: new Date().toISOString()
-            }],
-            fetchReply: true
+            }]
           })
 
           return await client.log(
@@ -305,10 +306,9 @@ module.exports = {
           profile.set("inventory", inventory.toString())
           await profile.save()
 
-          let response = await input.source.reply({
-            content: `${name} (x${amount}) used!`,
-            embeds: [itemEmbed(item, interaction.user, true)],
-            fetchReply: true
+          await input.source.editReply({
+            content: `**${name} (x${amount})** used!`,
+            embeds: [itemEmbed(item, interaction.user, true)]
           })
 
           return await client.log(
@@ -319,6 +319,12 @@ module.exports = {
       }
     } catch (error) {
       console.log(error);
+      if (input.source.replied || input.source.deferred) {
+        return await input.source.followUp({
+        content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# ${x}`).join("\n"),
+        flags: MessageFlags.Ephemeral
+      })
+      }
       return await input.source.reply({
         content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# ${x}`).join("\n"),
         flags: MessageFlags.Ephemeral

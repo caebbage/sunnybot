@@ -168,6 +168,7 @@ module.exports = {
         }
 
         if (item.get("shop_stock")) {
+          if (input.source.replied) throw new Error("Transaction already processed!")
           item.set("shop_stock", parseInt(item.get("shop_stock")) - amount)
           await item.save()
         }
@@ -177,6 +178,7 @@ module.exports = {
         if (limit.monthly) profile.set("monthly_limit", monthly.giveItem(name, amount).toString())
         if (limit.perma) profile.set("perma_limit", perma.giveItem(name, amount).toString())
 
+        if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
         let response = await input.source.reply({
@@ -199,7 +201,7 @@ module.exports = {
         if (!item) throw new Error("The specified item could not be found!")
 
         if (item.get("protected")?.toUpperCase() === "TRUE") throw new Error("This item is unusable; ping mods if you'd like to toss it!")
-        
+
         await db.users.reload()
         let profile = db.users.find(row => row.get("user_id") == input.user)
         if (!profile) throw new Error("Your user profile could not be found!")
@@ -275,6 +277,7 @@ module.exports = {
 
           oldValue = profile.get("money");
 
+          if (input.source.replied) throw new Error("Transaction already processed!")
           await profile.assign({
             money: +oldValue + res.money,
             inventory: inventory.toString(),
@@ -304,11 +307,13 @@ module.exports = {
           )
         } else {
           profile.set("inventory", inventory.toString())
+
+          if (input.source.replied) throw new Error("Transaction already processed!")
           await profile.save()
 
           await input.source.editReply({
             content: `**${name} (x${amount})** used!`,
-            embeds: [itemEmbed(item, interaction.user, true)]
+            embeds: [itemEmbed(item, client, true)]
           })
 
           return await client.log(
@@ -321,9 +326,9 @@ module.exports = {
       console.log(error);
       if (input.source.replied || input.source.deferred) {
         return await input.source.followUp({
-        content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# ${x}`).join("\n"),
-        flags: MessageFlags.Ephemeral
-      })
+          content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# ${x}`).join("\n"),
+          flags: MessageFlags.Ephemeral
+        })
       }
       return await input.source.reply({
         content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# ${x}`).join("\n"),

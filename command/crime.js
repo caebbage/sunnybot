@@ -88,6 +88,7 @@ module.exports = {
 
         let result = drawPool(crime.filter(x => x.get("type") == "success").map(x => x.toObject()))[0];
 
+        if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
         let response = await input.source.reply({
@@ -115,6 +116,7 @@ module.exports = {
 
         let result = drawPool(crime.filter(x => x.get("type") == "fail").map(x => x.toObject()))[0];
 
+        if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
         let response = await input.source.reply({

@@ -189,6 +189,8 @@ module.exports = {
 
     if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
+    let response = await input.source.deferReply({ fetchReply: true });
+    
     try {
       if (["money", "item", "to-user"].includes(input.command)) {
         await db.users.reload()
@@ -254,7 +256,7 @@ module.exports = {
           }, statusEmbed(status, client))
         }
 
-        const response = await input.source.reply({
+        await input.source.editReply({
           embeds,
           fetchReply: true
         });
@@ -270,14 +272,14 @@ module.exports = {
           }
         )
       } else {
-        return await input.source.reply({
+        return await input.source.editReply({
           content: "Transaction failed:\n-# `" + result.error.message + "`",
           flags: MessageFlags.Ephemeral
         })
       }
     } catch (error) {
       console.log(error);
-      return await input.source.reply({
+      return await input.source.followUp({
         content: "An error occurred:\n-# `" + error.message + "`",
         flags: MessageFlags.Ephemeral
       })

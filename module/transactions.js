@@ -48,8 +48,6 @@ async function award(interaction, target, change) {
       log.push(`> **item gain:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
     }
 
-    if (change.money || change.items) await profile.save()
-
 
     if ((change.heat || change.reputation || change.statuses) && !chara) throw new Error("Character not found.")
     if (change.heat) {
@@ -80,6 +78,8 @@ async function award(interaction, target, change) {
       log.push(`> **status:** Gained ` + newStatuses.filter(x => x).map(x => `\`${x.trim()}\``).join(", "))
     }
 
+    if (interaction.replied) throw new Error("Transaction already processed!")
+    if (change.money || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {
@@ -131,9 +131,6 @@ async function deduct(interaction, target, change) {
       log.push(`> **item loss:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
     }
 
-    if (change.money || change.items) await profile.save()
-
-
     if ((change.heat || change.reputation || change.statuses) && !chara) throw new Error("Character not found.")
     if (change.heat) {
       const oldVal = +chara.get("heat"),
@@ -155,13 +152,15 @@ async function deduct(interaction, target, change) {
     if (change.statuses) {
       let statuses = chara.get("statuses")?.split(", ").map(x => x.trim()) || [],
         removeStatuses = change.statuses.split(", ").map(x => x.trim());
-      
+
       statuses = statuses.filter(x => !removeStatuses.includes(x))
 
       chara.set("statuses", [...new Set(statuses.filter(x => x))].join(", "))
       log.push(`> **status:** Lost ` + removeStatuses.map(x => `\`${x.trim()}\``).join(", "))
     }
 
+    if (interaction.replied) throw new Error("Transaction already processed!")
+    if (change.money || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {
@@ -238,12 +237,11 @@ async function transfer(interaction, giver, receiver, change) {
       log.receiver.push(`> **item gain:**\n` + change.items.toString().split("\n").map(x => `> - ${x}`).join("\n"))
     }
 
+    if (interaction.replied) throw new Error("Transaction already processed!")
     if (change.money || change.items) {
       await giver.profile.save()
       await receiver.profile.save()
     }
-
-    if (change.heat || change.reputation) await chara.save()
 
     return {
       success: true,

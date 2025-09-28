@@ -56,6 +56,9 @@ module.exports = {
       } else if (/<@!?(\d+)>/.test(inputs)) {
         input.command = "user"
         input.user = /<@!?(\d+)/.exec(inputs)[1]
+      } else {
+        input.command = "user"
+        input.user = inputs?.trim()
       }
     }
 
@@ -66,16 +69,15 @@ module.exports = {
     try {
       await db.users.reload()
 
-      let profile;
-      profile = db.users.find(row => row.get("user_id") == input.user);
+      let profile = db.users.find(row => row.get("user_id") == input.user);
+      if (!profile) profile = db.users.find(row => row.get("display_name")?.toLowerCase() == input.user);
 
       if (!profile) throw new Error("The specified user could not be found! They may not yet be registered in the system.")
-
 
       if (input.command !== "edit") {
         return await input.source.reply({
           embeds: [
-            await userEmbed(profile, client),
+            userEmbed(profile, client),
             inventoryEmbed(profile, client)
           ],
           flags: (input.hide ? MessageFlags.Ephemeral : undefined)
@@ -153,18 +155,19 @@ module.exports = {
           pronouns: interaction.fields.getTextInputValue("pronouns"),
           timezone: interaction.fields.getTextInputValue("timezone")
         };
-
+        
         await profile.assign(updates)
         await profile.save()
 
-        await interaction.client.log(`**EDITED PROFILE:** <@${input}>`
-          + Object.entries(updates).map(x => `\n> **${x[0]}**: ${x[1]}`).join(""))
-
-        return await interaction.reply({
+        await interaction.reply({
           content: "Your profile has been updated.",
           embeds: [userEmbed(profile, interaction.client)],
           flags: MessageFlags.Ephemeral
         })
+
+        
+        return await interaction.client.log(`**EDITED PROFILE:** <@${input}>`
+          + Object.entries(updates).map(x => `\n> **${x[0]}**: ${x[1]}`).join(""))
       }
     } catch (error) {
       console.log(error);

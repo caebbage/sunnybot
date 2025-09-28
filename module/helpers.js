@@ -62,7 +62,7 @@ function charaEmbed(chara, client) {
       + "```"
       + "\n> **STAT MODIFIERS:**\n" + "```ansi\n"
       + factionBonus(faction, client)
-      + (bonuses.turf?.length ? "\n\n" + turfBonus(bonuses.turf) : "")
+      + (bonuses.turf?.length ? "\n\n" + turfBonus(bonuses.turf, faction) : "")
       + (bonuses.status?.length ? "\n\n" + statusMods(bonuses.status) : "")
       + "```"
       + "\n-# Stat modifiers are already added to the stats block."
@@ -96,6 +96,12 @@ function charaEmbed(chara, client) {
 }
 
 function factionEmbed(faction, client) {
+  const turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"));
+  const bonuses = {
+    turf: parseBonus(turfs, "turf_id"),
+    faction: parseBonus([faction], "faction_name")
+  };
+
   return {
     title: (faction.get("pin_emoji") || faction.get("simple_emoji")) + " THE " + faction.get("faction_name").toUpperCase(),
     description:
@@ -104,9 +110,10 @@ function factionEmbed(faction, client) {
       + `\n> ♔ *${faction.get("leader")}*`
       + `\n\n👤\` MEMBERS ✦ \` ${client.db.charas.filter(x => x.get("chara_name") && x.get("faction") == faction.get("faction_name")).length}`
       + `\n📍\` HEXES OWNED ✦ \` ${client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")).length}/99`
-      + `\n💳\` FUNDS ✦ \` ${faction.get("funds")}`
-      + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction, client) +
-      (turfBonus(faction, client) ? "\n\n" + turfBonus(faction, client) : "") + "```"
+      + `\n💳\` FUNDS ✦ \` ${faction.get("remaining_funds")}`
+      + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction)
+      + (turfBonus(bonuses.turf, faction) ? "\n\n" + turfBonus(bonuses.turf, faction) : "")
+      + "```"
     ,
     color: color(faction.get("main_color") || client.config("default_color")),
     thumbnail: {
@@ -188,11 +195,51 @@ function turfBonus(bonuses, faction) {
 }
 
 function statusEmbed(status, client) {
+  let bonuses = parseBonus([status], "status_name")[0];
+
+  let res = "";
+  statNames.forEach(stat => {
+    if (bonuses[stat]) res += `❰ ${stat.toUpperCase()} ${bonuses[stat] < 0 ? "" : "+"}${bonuses[stat]} ❱ `
+  })
+
+  if ((bonuses.other?.filter(x => x)?.length)) {
+    res += "\n" + bonuses.other.filter(x => x).map(x => `[2;37m  ‣[2;30m ${x}[0m`).join("\n")
+  }
+
   return {
     title: `${client.config("decorative_symbol")} ${status.get("status_name").toUpperCase()}`,
-    description: (status.get("description")?.split("\n").map(x => `> ${x}`).join("\n") ?? "> *No description found.*"),
+    description: (status.get("description")?.split("\n").map(x => `> ${x}`).join("\n") ?? "> *No description found.*")
+      + (res ? "\n```ansi\n" + colorStats(res, false) + "```" : ""),
     color: color(client.config("default_color")),
     thumbnail: { url: client.config("default_image") }
+  }
+}
+
+function turfEmbed(turf, client) {
+  let bonuses = parseBonus([turf], "turf_id")[0];
+
+  let faction = client.db.factions.find(x => x.get("faction_name") == turf.get("controlled_by"))
+
+  let res = "";
+  statNames.forEach(stat => {
+    if (bonuses[stat]) res += `❰ ${stat.toUpperCase()} ${bonuses[stat] < 0 ? "" : "+"}${bonuses[stat]} ❱ `
+  })
+
+  if ((bonuses.other?.filter(x => x)?.length)) {
+    res += "\n" + bonuses.other.filter(x => x).map(x => `[2;37m  ‣[2;30m ${x}[0m`).join("\n")
+  }
+
+  return {
+    title: `${faction?.get("pin_emoji") ??
+      client.config("decorative_symbol")
+      }【${turf.get("turf_id")}】 ${turf.get("turf_name")?.toUpperCase() || ""}`,
+    description:
+      "` CONTROLLED BY ` " + (faction ? "The " + toTitleCase(faction.get("faction_name")) : turf.get("controlled_by"))
+      + ("\n`   HOLD ` " + (turf.get("hold") || "0") + ((turf.get("is_base") == "TRUE") ? ` ${client.config("decorative_symbol")} Base established` : ""))
+      + (turf.get("description") ? "\n" + turf.get("description")?.split("\n").filter(x => x).map(x => `> ${x}`).join("\n") : "")
+      + (res ? "\n```ansi\n" + colorStats(res, false) + "```" : ""),
+    color: color(faction?.get("main_color") || client.config("default_color")),
+    thumbnail: { url: turf.get("turf_thumb") || faction?.get("crest_image") || client.config("default_image") }
   }
 }
 
@@ -450,12 +497,14 @@ const removeEmpty = (obj) => {
   return newObj;
 };
 
+const toTitleCase = (str) => str.replace(/\w\S*/g, (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase())
+
 module.exports = {
   money,
   userEmbed, charaEmbed, factionEmbed,
   inventoryEmbed, itemEmbed,
   statusEmbed,
-  hexList,
+  turfEmbed, hexList,
   findChar, diacritic,
   parseEmbed, formatEmbed,
   pad, arrayChunks, removeEmpty, color,

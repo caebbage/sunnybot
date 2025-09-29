@@ -58,7 +58,7 @@ module.exports = {
         input.user = /<@!?(\d+)/.exec(inputs)[1]
       } else {
         input.command = "user"
-        input.user = inputs?.trim()
+        input.user = inputs?.toLowerCase().trim()
       }
     }
 

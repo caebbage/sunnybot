@@ -39,7 +39,7 @@ module.exports = async (client) => {
       sheet: client.sheets.config.src.sheetsById[sheetId],
       async reload() {
         this.data = await this.sheet?.getRows({
-          limit: 250
+          limit: 500
         }) ?? this.data()
       },
       data: [],

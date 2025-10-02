@@ -7,7 +7,7 @@ module.exports = {
     .setName('turf')
     .setDescription("Check the info for a turf.")
     .addStringOption(option => option
-      .setName('id')
+      .setName('hex')
       .setDescription("The turf to look up.")
       .setAutocomplete(true)
       .setRequired(true)
@@ -19,10 +19,10 @@ module.exports = {
 
   async parse(interaction, message, inputs) {
     return await this.execute(interaction.client, {
-        source: interaction,
-        id: interaction.options.getString("id"),
-        hide: interaction.options.getBoolean("hide") ?? false
-      })
+      source: interaction,
+      id: interaction.options.getString("id"),
+      hide: interaction.options.getBoolean("hide") ?? false
+    })
   },
   async execute(client, input) {
     const db = client.db;
@@ -55,16 +55,20 @@ module.exports = {
 
       let data = db.turf.filter(x => x.get("turf_id"))
 
-      let filtered = data ?
-        fuzzy.filter(focused.value, data.length ? data : [], { extract: x => `${x.get("turf_id")} // ${diacritic(x.get("turf_name"))}` }) : []
+      let filtered = fuzzy.filter(focused.value, data, { extract: x => `${x.get("turf_id")} // ${diacritic(x.get("turf_name"))}` })
       if (filtered.length > 25) filtered.length = 25
 
-      return await interaction.respond(
-        filtered.map(choice => ({ 
-          name: choice.original.get("turf_id") + (choice.original.get("turf_name") ? ": " + choice.original.get("turf_name") : ""), 
-          value: choice.original.get("turf_id")
-        }))
-      )
+      return await interaction.respond(filtered.map(choice => {
+        let hex = choice.original, symbol;
+        if (["cartel", "triad"].includes(hex.get("controlled_by"))) {
+          symbol = db.factions.find(f => f.get("faction_name") == hex.get("controlled_by"))?.get("simple_emoji")
+        } else { symbol = client.config("contested_emoji") }
+
+        return {
+          name: `${hex.get("turf_id")} ${symbol} ${hex.get("turf_name")}`.trim(),
+          value: hex.get("turf_id")
+        }
+      }))
     } catch (error) {
       console.log(error)
     }

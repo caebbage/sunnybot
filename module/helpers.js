@@ -110,7 +110,8 @@ function factionEmbed(faction, client) {
       + `\n> ♔ *${faction.get("leader")}*`
       + `\n\n👤\` MEMBERS ✦ \` ${client.db.charas.filter(x => x.get("chara_name") && x.get("faction") == faction.get("faction_name")).length}`
       + `\n📍\` HEXES OWNED ✦ \` ${client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")).length}/99`
-      + `\n💳\` FUNDS ✦ \` ${faction.get("remaining_funds")}`
+      + `\n💳\` FUNDS ✦ \` ${faction.get("remaining_funds")}k`
+      + `\n📈\` INCOME ✦ \` ${faction.get("weekly_funds")}k`
       + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction)
       + (turfBonus(bonuses.turf, faction) ? "\n\n" + turfBonus(bonuses.turf, faction) : "")
       + "```"
@@ -158,7 +159,7 @@ function parseBonus(list, nameParam) {
 }
 
 function sumBonus(bonuses) {
-  let sum = { hot: 0, cool: 0, hard: 0, sharp: 0, other: {} };
+  let sum = { hot: 0, cool: 0, hard: 0, sharp: 0, other: new Map() };
 
   bonuses.reduce((total, curr) => {
     statNames.forEach(stat => {
@@ -166,8 +167,7 @@ function sumBonus(bonuses) {
     })
 
     curr.other?.forEach(bonus => {
-      if (total.other[bonus]) total.other[bonus]++
-      else total.other[bonus] = 1
+      if (total.other.get(bonus)) total.other.set(bonus, (total.other.get(bonus) || 0) + 1)
     })
 
     return total
@@ -179,16 +179,21 @@ function sumBonus(bonuses) {
 function turfBonus(bonuses, faction) {
   if (!bonuses.length) return;
 
-  let total = sumBonus(bonuses);
+  const total = sumBonus(bonuses);
 
   let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${bonuses.length}[0m[2;37m turfs:[0m`
+
+  if (!total.hot && !total.cool && !total.hard && !total.sharp && !total.other?.length) {
+    res += `\n[2;37m  ‣[2;30m No bonuses... yet![0m`;    
+    return res
+  }
 
   statNames.forEach(stat => {
     if (total[stat]) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} +${total[stat]} ❱[0m`;
   })
 
-  if ((Object.keys(bonuses.other).length)) {
-    res += "\n" + Object.entries(total.other).map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
+  if (total.other?.length) {
+    res += "\n" + [...bonuses.other.values()].map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
   }
 
   return res
@@ -509,5 +514,5 @@ module.exports = {
   parseEmbed, formatEmbed,
   pad, arrayChunks, removeEmpty, color,
   randBetween, limit,
-  styleText
+  styleText, toTitleCase
 }

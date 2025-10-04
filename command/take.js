@@ -213,6 +213,7 @@ module.exports = {
 
     let response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
 
+    if (input.itemList || input.item) await db.items.reload()
     if (input.itemList) {
       change.items = new Inventory(
         input.itemList.split("|").map(x => x.trim()).filter(x => x).join("\n")

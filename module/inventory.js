@@ -40,7 +40,7 @@ module.exports = {
       let result = new Map();
       groups.forEach(group => {
         result.set(group,
-          [...inInv.entries().filter(([, data]) => data.group == group).map(([item, data]) => `${item} (x${data.amount})`)].join("\n")
+          [...[...inInv.entries()].filter(([, data]) => data.group == group).map(([item, data]) => `${item} (x${data.amount})`)].join("\n")
         )
       })
       return result;

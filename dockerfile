@@ -1,6 +1,6 @@
 FROM debian:trixie as builder
 
-ARG NODE_VERSION=18.16.1
+ARG NODE_VERSION=v22.14.0
 
 RUN apt-get update; apt install -y curl
 RUN curl https://get.volta.sh | bash

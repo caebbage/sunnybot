@@ -103,7 +103,7 @@ module.exports = {
         return await client.log(`**CRIME:** <@${input.user}>`
           + `\n> **Result:** Success`
           + `\n> **Money:** +${reward} (${oldVal} → ${newVal})`,
-          { url: response.url }
+          { url: response?.url }
         )
       } else {
         var fine = randBetween(config.min_lost, config.max_lost);

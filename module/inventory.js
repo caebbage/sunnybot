@@ -40,7 +40,7 @@ module.exports = {
       let result = new Map();
       groups.forEach(group => {
         result.set(group,
-          [...[...inInv.entries()].filter(([, data]) => data.group == group).map(([item, data]) => `${item} (x${data.amount})`)].join("\n")
+          [...inInv.entries().filter(([, data]) => data.group == group).map(([item, data]) => `${item} (x${data.amount})`)].join("\n")
         )
       })
       return result;
@@ -90,7 +90,7 @@ module.exports = {
     }
 
     has(find) {
-      for (let [item, amt] of (find.entries?.() || find)) {
+      for (const [item, amt] of (find.entries?.() || find)) {
         if (!this.hasItem(item, amt)) return false
       }
       return true
@@ -114,7 +114,7 @@ module.exports = {
 
     take(take) {
       if (this.has(take)) {
-        for (let [item, amt] of (take.entries?.() || take)) {
+        for (const [item, amt] of (take.entries?.() || take)) {
           this.data.set(item, this.data.get(item) - amt)
         }
       } else throw new Error("The requested items are not available!")
@@ -124,7 +124,7 @@ module.exports = {
 
     takeItem(item, amt = 1) {
       if (this.hasItem(item, amt)) {
-        this.data.set(this.data.get(item) - amt)
+        this.data.set(item, this.data.get(item) - amt)
       } else throw new Error("The requested item is not available!")
 
       return this.clean()
@@ -132,7 +132,7 @@ module.exports = {
 
 
     give(give) {
-      for (let [item, amt] of (give.entries?.() || give)) {
+      for (const [item, amt] of (give.entries?.() || give)) {
         this.data.set(item, (this.data.get(item) || 0) + amt)
       }
 
@@ -140,7 +140,7 @@ module.exports = {
     }
 
     giveItem(item, amt = 1) {
-      this.data.set((this.data.get(item) || 0) + amt)
+      this.data.set(item, (this.data.get(item) || 0) + amt)
 
       return this.sort()
     }

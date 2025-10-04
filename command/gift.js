@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
-  { color, money, itemEmbed } = require("../module/helpers.js"),
+  { color, money, itemEmbed, diacritic } = require("../module/helpers.js"),
   { transfer } = require("../module/transactions.js"),
   { Inventory } = require('../module/inventory.js'),
   fuzzy = require("fuzzy");
@@ -134,13 +134,13 @@ module.exports = {
       if (focused.name === "item") {
         if (focused.value.length <= 1) await db.users.reload()
 
-        const inventory = new Inventory(db.users.find(x => x.get("user_id") == interaction.user.id ?? "").get("inventory")) || [];
+        const inventory = new Inventory(db.users.find(x => x.get("user_id") == interaction.user.id ?? "").get("inventory"));
 
-        let filtered = !inventory.isEmpty() ? fuzzy.filter(focused.value, inventory.entries(), { extract: x => x[0].normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let filtered = fuzzy.filter(diacritic(focused.value), inventory.keys(), { extract: x => diacritic(x) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
-          filtered.map(choice => ({ name: choice.original[0], value: choice.original[0] }))
+          filtered.map(choice => ({ name: choice.original, value: choice.original }))
         )
       }
     } catch (error) {

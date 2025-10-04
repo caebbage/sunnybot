@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { charaEmbed, findChar, arrayChunks } = require("../module/helpers.js")
+const { charaEmbed, findChar, arrayChunks, diacritic } = require("../module/helpers.js")
 const fuzzy = require("fuzzy")
 
 module.exports = {
@@ -186,8 +186,7 @@ module.exports = {
       data = [...data.filter(row => row.get("is_npc")?.toUpperCase() !== "TRUE"), ...data.filter(row => row.get("is_npc")?.toUpperCase() === "TRUE")]
 
       if (focused.name === "chara") {
-        let filtered = db.charas.data?.length ?
-          fuzzy.filter(focused.value, data.length ? data : [], { extract: x => (x.get("chara_name") + " // " + x.get("full_name")).normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("chara_name") + " // " + x.get("full_name")) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -196,8 +195,7 @@ module.exports = {
       } else if (focused.name === "oc") {
         data = data.filter(row => row.get("owner_id") === interaction.user.id)
 
-        let filtered = db.charas.data?.length ?
-          fuzzy.filter(focused.value, data.length ? data : [], { extract: x => (x.get("chara_name") + " // " + x.get("full_name")).normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("chara_name") + " // " + x.get("full_name"))})
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

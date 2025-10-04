@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
   fuzzy = require("fuzzy"),
-  { itemEmbed, color, money } = require("../module/helpers.js"),
+  { itemEmbed, color, money, diacritic } = require("../module/helpers.js"),
   { drawPool } = require("../module/gacha.js"),
   { Inventory } = require("../module/inventory.js");
 
@@ -348,7 +348,9 @@ module.exports = {
       if (focused.value.length <= 1) await db.items.reload()
 
       if (focused.name === "item") {
-        let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let data = db.items.filter(item => item.get("item_name") && item.get("category"))
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("item_name")) })
+
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -356,23 +358,25 @@ module.exports = {
         )
       } else if (focused.name === "buy") {
 
-        let filtered = db.items.data.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
-        filtered = filtered.filter(x => x.original.get("in_shop")?.toUpperCase() == "TRUE" && x.original.get("price") && !isNaN(x.original.get("price")) && x.original.get("shop_stock") !== "0")
+        let data = db.items.filter(item => item.get("item_name") && item.get("category")
+          && item.get("in_shop")?.toUpperCase() == "TRUE" && item.get("price") && !isNaN(item.get("price")) && item.get("shop_stock") !== "0")
+
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("item_name")) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
           filtered.map(choice => ({ name: choice.original.get("item_name"), value: choice.original.get("item_name") }))
         )
       } else if (focused.name === "use") {
-        let profile;
         if (focused.value.length <= 1) await db.users.reload()
 
-        profile = db.users.find(row => row.get("user_id") == interaction.user.id) ?? null;
+        let profile = db.users.find(row => row.get("user_id") == interaction.user.id),
+          inventory = new Inventory(profile?.get("inventory"));
 
-        let filtered = db.items.data.length ? fuzzy.filter(
-          focused.value, db.items.data.filter(x => x.get("item_name") && x.get("protected")?.toUpperCase() !== "TRUE"),
-          { extract: x => x.get("item_name")?.normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
-        if (profile) filtered = filtered.filter(item => new Inventory(profile.get("inventory")).hasItem(item.original.get("item_name")))
+        let data = db.items.data.filter(x => x.get("item_name") && x.get("protected")?.toUpperCase() !== "TRUE")
+        if (profile) data = data.filter(item => inventory.hasItem(item.get("item_name")))
+
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("item_name")) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
-  { color, money, itemEmbed, statusEmbed } = require("../module/helpers.js"),
+  { color, money, itemEmbed, statusEmbed, diacritic } = require("../module/helpers.js"),
   { award } = require("../module/transactions.js"),
   { Inventory } = require('../module/inventory.js'),
   fuzzy = require("fuzzy");
@@ -307,6 +307,7 @@ module.exports = {
           }
         )
       } else {
+        console.log(result.error)
         return await input.source.editReply({
           content: "Transaction failed:\n-# `" + result.error.message + "`",
           flags: MessageFlags.Ephemeral
@@ -329,7 +330,10 @@ module.exports = {
       if (focused.name === "chara") {
         if (focused.value.length <= 1) await db.charas.reload() // refresh db upon starting input
 
-        let filtered = db.charas.data?.length ? fuzzy.filter(focused.value, db.charas.data, { extract: x => (x.get("chara_name") + " // " + x.get("full_name")).normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+
+        let data = db.charas.filter(x => x.get("chara_name"))
+
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("chara_name") + " // " + x.get("full_name")) });
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -338,7 +342,9 @@ module.exports = {
       } else if (focused.name === "item") {
         if (focused.value.length <= 1) await db.items.reload()
 
-        let filtered = db.items.data?.length ? fuzzy.filter(focused.value, db.items.data.filter(x => x.get("item_name")), { extract: x => x.get("item_name").normalize('NFD').replace(/\p{Diacritic}/gu, '') ?? " " }) : []
+        let data = db.items.filter(item => item.get("item_name") && item.get("category"))
+
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("item_name")) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -346,13 +352,14 @@ module.exports = {
         )
       } else if (focused.name === "status") {
         if (focused.value.length <= 1) await db.statuses.reload()
-        let data = db.statuses.filter(x => x.get("status_name"))
 
-        let filtered = fuzzy.filter(focused.value, data, { extract: x => x.get("status_name").normalize('NFD').replace(/\p{Diacritic}/gu, '') })
+        let data = db.statuses.filter(x => x.get("status_name")).map(x => x.get("status_name"))
+
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
-          filtered.map(choice => ({ name: choice.original.get("status_name"), value: choice.original.get("status_name") }))
+          filtered.map(choice => ({ name: choice.original, value: choice.original }))
         )
       }
     } catch (error) {

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
-  { color, money } = require("../module/helpers.js"),
+  { color, money, diacritic } = require("../module/helpers.js"),
   { deduct } = require("../module/transactions.js"),
   { Inventory } = require('../module/inventory.js'),
   fuzzy = require("fuzzy");
@@ -257,7 +257,7 @@ module.exports = {
               let item = db.items.find(row => row.get("item_name") == items[0][0]);
 
               embeds.push({
-                description: `<@${profile.get("user_id")}> has gained **${items[0][0]} (x${items[0][1] || 1})**!`,
+                description: `<@${profile.get("user_id")}> has lost **${items[0][0]} (x${items[0][1] || 1})**!`,
                 color: color(client.config("default_color"))
               },
                 itemEmbed(item, client, true))
@@ -331,7 +331,7 @@ module.exports = {
         let data = db.charas.filter(x => x.get("chara_name"))
         if (interaction.options.getSubcommand() == "status") data = data.filter(x => x.get("statuses"))
 
-        let filtered = fuzzy.filter(focused.value, data, { extract: x => (x.get("chara_name") + " // " + x.get("full_name")).normalize('NFD').replace(/\p{Diacritic}/gu, '') })
+        let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("chara_name") + " // " + x.get("full_name")) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
@@ -339,13 +339,13 @@ module.exports = {
         )
       } else if (focused.name === "item") {
         if (focused.value.length <= 1) await db.users.reload()
-        const inventory = new Inventory(db.users.find(x => x.get("user_id") == interaction.options.get("user")?.value ?? "").get("inventory")) || [];
+        const inventory = new Inventory(db.users.find(x => x.get("user_id") == interaction.options.get("user")?.value ?? "")?.get("inventory"));
 
-        let filtered = !inventory.isEmpty() ? fuzzy.filter(focused.value, inventory.entries(), { extract: x => x[0].normalize('NFD').replace(/\p{Diacritic}/gu, '') }) : []
+        let filtered = !inventory.isEmpty() ? fuzzy.filter(diacritic(focused.value), inventory.keys(), { extract: x => diacritic(x) }) : []
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
-          filtered.map(choice => ({ name: choice.original[0], value: choice.original[0] }))
+          filtered.map(choice => ({ name: choice.original, value: choice.original }))
         )
       } else if (focused.name === "status") {
         if (focused.value.length <= 1) await db.charas.reload()
@@ -354,7 +354,7 @@ module.exports = {
 
         let statuses = chara ? chara.get("statuses").split(", ").filter(x => x) : [];
 
-        let filtered = fuzzy.filter(focused.value, statuses, { extract: x => x.normalize('NFD').replace(/\p{Diacritic}/gu, '') })
+        let filtered = fuzzy.filter(diacritic(focused.value), statuses, { extract: x => diacritic(x) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(

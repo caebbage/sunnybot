@@ -68,6 +68,7 @@ module.exports = {
     const db = client.db;
     try {
       await db.users.reload()
+      await db.items.reload()
 
       let profile = db.users.find(row => row.get("user_id") == input.user);
       if (!profile) profile = db.users.find(row => row.get("display_name")?.toLowerCase() == input.user);

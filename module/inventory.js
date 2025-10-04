@@ -30,7 +30,7 @@ module.exports = {
       const inInv = new Map();
       items.filter(x => this.keys().includes(x.get("item_name"))).forEach(item => {
         inInv.set(item.get("item_name"), {
-          group: item.get("category"),
+          group: item.get("category") || "Uncategorized",
           amount: this.data.get(item.get("item_name"))
         })
       })

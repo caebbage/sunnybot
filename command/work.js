@@ -91,19 +91,19 @@ module.exports = {
         if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
-        let response = await input.source.reply({
+        let response = (await input.source.reply({
           embeds: [{
             description: result.description.replace("{{MONEY}}", money(reward, client))
               + `\n-# You may work again in <t:${Math.floor(newCooldown.valueOf() / 1000)}:R>, resetting at midnight PST.`,
             color: color(client.config("default_color"))
           }],
-          fetchReply: true
-        })
+          withResponse: true
+        }))?.resource?.message
 
         return await client.log(`**WORK:** <@${input.user}>`
           + `\n> **Result:** Success`
           + `\n> **Money:** +${reward} (${oldVal} → ${newVal})`,
-          { url: response.url }
+          { url: response?.url }
         )
       } else {
         profile.set("work_cooldown", now.valueOf())
@@ -113,14 +113,14 @@ module.exports = {
         if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
-        let response = await input.source.reply({
+        let response = (await input.source.reply({
           embeds: [{
             description: result.description
               + `\n-# You may work again in <t:${Math.round(newCooldown.valueOf() / 1000)}:R>.`,
             color: color(client.config("default_color"))
           }],
-          fetchReply: true
-        })
+          withResponse: true
+        }))?.resource?.message
 
         return await client.log(`**WORK:** <@${input.user}>`
           + `\n> **Result:** Fail`,

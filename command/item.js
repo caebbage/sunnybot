@@ -181,11 +181,11 @@ module.exports = {
         if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
-        let response = await input.source.reply({
+        let response = (await input.source.reply({
           content: `Bought **${name} (x${amount})**!`,
           embeds: [itemEmbed(item, client, true)],
-          fetchReply: true
-        })
+          withResponse: true
+        }))?.resource?.message
 
         return await client.log(
           `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`
@@ -194,7 +194,7 @@ module.exports = {
         )
 
       } else if (input.command === "use") {
-        let response = await input.source.deferReply({ fetchReply: true });
+        let response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
 
         let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.use) : []
 

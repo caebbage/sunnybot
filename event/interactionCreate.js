@@ -24,7 +24,7 @@ module.exports = {
           } else {
             await interaction.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
           }
-        } catch (err) {console.log("  Interaction no longer exists!")}
+        } catch (err) { console.log("  Interaction no longer exists!") }
       }
     } else if (interaction.isAutocomplete()) {
       const command = client.commands.get(interaction.commandName);
@@ -49,7 +49,7 @@ module.exports = {
             src = await interaction.message.channel.messages.fetch(interaction.message.reference.messageId);
 
           if (!customCmd) return await interaction.reply({ content: 'The button was not recognized!', flags: MessageFlags.Ephemeral });
-          if (interaction.user.id !== src?.author.id) throw new Error('Only the original sender can use these buttons!');
+          if (interaction.user.id !== src?.author.id) throw 'Only the original sender can use these buttons!';
           await interaction.update((await pullPool(interaction.message, commandChain[0], customCmd, PREFIX + commandChain.join(" ")))[0])
 
         } else if (!command) throw new Error('The button was not recognized!')
@@ -57,7 +57,13 @@ module.exports = {
 
       } catch (error) {
         console.error(error);
-        await interaction.reply({ content: "An error occurred:\n-# `" + error.message + "`", flags: MessageFlags.Ephemeral });
+        try {
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+          } else {
+            await interaction.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+          }
+        } catch (err) { console.log("  Interaction no longer exists!") }
       }
     } else if (interaction.isModalSubmit()) {
       const commandChain = interaction.customId.split(":");
@@ -71,7 +77,13 @@ module.exports = {
 
       } catch (error) {
         console.error(error);
-        await interaction.reply({ content: "An error occurred:\n-# `" + error.message + "`", flags: MessageFlags.Ephemeral });
+        try {
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+          } else {
+            await interaction.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+          }
+        } catch (err) { console.log("  Interaction no longer exists!") }
       }
     }
   },

@@ -46,6 +46,20 @@ module.exports = {
       )
     )
     .addSubcommand(subcommand => subcommand
+      .setName("item-list")
+      .setDescription("Take a list of items from a user.")
+      .addUserOption(option => option
+        .setName("user")
+        .setDescription("The user losing the items.")
+        .setRequired(true)
+      )
+      .addStringOption(option => option
+        .setName("item-list")
+        .setDescription("A list of multiple items to take. Format: Item 1 (x1) | Item 2 (x2)")
+        .setRequired(true)
+      )
+    )
+    .addSubcommand(subcommand => subcommand
       .setName("heat")
       .setDescription("Take Heat from a character.")
       .addStringOption(option => option
@@ -118,6 +132,10 @@ module.exports = {
         .setDescription("How much of an item to take. (Default 1)")
         .setMinValue(1)
       )
+      .addStringOption(option => option
+        .setName("item-list")
+        .setDescription("A list of multiple items to take. Format: Item 1 (x1) | Item 2 (x2)")
+      )
     )
     .addSubcommand(subcommand => subcommand
       .setName("from-user-chara")
@@ -142,6 +160,10 @@ module.exports = {
         .setName("item-amt")
         .setDescription("How much of an item to take. (Default 1)")
         .setMinValue(1)
+      )
+      .addStringOption(option => option
+        .setName("item-list")
+        .setDescription("A list of multiple items to take. Format: Item 1 (x1) | Item 2 (x2)")
       )
       .addIntegerOption(option => option
         .setName("heat")
@@ -172,6 +194,7 @@ module.exports = {
       money: interaction.options.getInteger("money"),
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
+      itemList: interaction.options.getString("item-list"),
 
       heat: interaction.options.getInteger("heat"),
       reputation: interaction.options.getInteger("rep"),
@@ -188,12 +211,17 @@ module.exports = {
         statuses: input.status
       };
 
-    if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
+    let response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
 
-    let response = await input.source.deferReply({ fetchReply: true });
+    if (input.itemList) {
+      change.items = new Inventory(
+        input.itemList.split("|").map(x => x.trim()).filter(x => x).join("\n")
+        + (input.item ? `\n${input.item} (x${input.itemAmt || 1})` : "")
+      ).validate(client)
+    } else if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
     try {
-      if (["money", "item", "from-user"].includes(input.command)) {
+      if (["money", "item", "item-list", "from-user"].includes(input.command)) {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
@@ -223,10 +251,23 @@ module.exports = {
             })
           }
           if (change.items) {
-            embeds.push({
-              description: `<@${profile.get("user_id")}> has lost **${input.item} (x${input.itemAmt || 1})**!`,
-              color: color(client.config("default_color"))
-            })
+            let items = change.items.entries();
+
+            if (items.length == 1) {
+              let item = db.items.find(row => row.get("item_name") == items[0][0]);
+
+              embeds.push({
+                description: `<@${profile.get("user_id")}> has gained **${items[0][0]} (x${items[0][1] || 1})**!`,
+                color: color(client.config("default_color"))
+              },
+                itemEmbed(item, client, true))
+            } else {
+              embeds.push({
+                description: `<@${profile.get("user_id")}> has lost the following items:\n`
+                  + change.items.toString().split("\n").map(x => `> ${x}`).join("\n"),
+                color: color(client.config("default_color"))
+              })
+            }
           }
         }
 
@@ -252,10 +293,7 @@ module.exports = {
           }
         }
 
-        await input.source.editReply({
-          embeds,
-          fetchReply: true
-        });
+        await input.source.editReply({ embeds });
 
         return await client.log(
           `**TRANSACTION:** `

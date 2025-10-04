@@ -45,7 +45,7 @@ module.exports = {
       if (hex.get("controlled_by") == input.faction) throw new Error("This hex is already under your control!")
       if (hex.get("is_base") == "TRUE") throw new Error("This hex has base development and is uncapturable!")
 
-      let response = (await input.source.deferReply({ withResponse: true })).resource.message;
+      let response = (await input.source.deferReply({ withResponse: true })).resource?.message;
 
       await new Promise(r => setTimeout(r, 2000));
 

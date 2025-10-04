@@ -120,12 +120,13 @@ module.exports = {
 
         let chara = await db.charas.sheet.addRow(res)
 
-        let response = await input.source.reply({
+        let response = (await input.source.reply({
           content:
             newProf ? `User created! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=509433378#gid=509433378>).` : ""
               + `Character ${input.name} added! Please edit info within the [Bot Database](<https://docs.google.com/spreadsheets/d/14p5wuWhpO5eXMhkz-oX6lnXgJHTXfj9HpH1cShLXJZA/edit?gid=942489959#gid=942489959>).`,
-          fetchReply: true
-        })
+          withResponse: true
+        }))?.resource?.message
+        
         return await client.log(`**NEW CHARACTER:** \`${res.chara_name}\` (${res.full_name}) (${input.user})`,
           {
             sender: input.source.user.id,

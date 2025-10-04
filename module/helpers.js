@@ -5,19 +5,6 @@ const statNames = ["hot", "cool", "hard", "sharp"]
 
 const money = (amt, client) => client.config("money_format").replace("{{MONEY}}", amt)
 
-function userEmbed(profile, client) {
-  return {
-    title: client.config("decorative_symbol") + " " + profile.get("display_name").toUpperCase(),
-    description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0"),
-    color: color(client.config("default_color")),
-    footer: {
-      text: "@" + client.users.resolve(profile.get("user_id"))?.username
-        + " ✦ " + (profile.get("pronouns") || "N/A")
-        + " ✦ " + (profile.get("timezone") || "GMT +?")
-    }
-  }
-}
-
 function charaEmbed(chara, client) {
   const faction = client.db.factions.find(x => x.get("faction_name") == chara.get("faction")),
     turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")),
@@ -336,21 +323,6 @@ function hexList(client, faction) {
   return groups.map(x => x.join("\n"));
 }
 
-function inventoryEmbed(profile, client) {
-  return {
-    title: client.config("decorative_symbol") + " INVENTORY",
-    description: (profile.get("inventory") ?
-      (new Inventory(profile.get("inventory"))).toIcoString(client).split("\n").map(x => `> ${x}`).join("\n")
-      + '\n\n-# Use `/item info` to see more about an item.'
-      : "-# You appear to have no items!"),
-    color: color(client.config("default_color")),
-    thumbnail: {
-      url: client.config("default_image")
-    },
-    timestamp: new Date().toISOString()
-  }
-}
-
 function itemEmbed(item, client, simple = false) {
   return {
     title: `${item.get("emoji") || client.config("default_item_emoji")} ${item.get("item_name").toUpperCase()}`,
@@ -506,8 +478,8 @@ const toTitleCase = (str) => str.replace(/\w\S*/g, (text) => text.charAt(0).toUp
 
 module.exports = {
   money,
-  userEmbed, charaEmbed, factionEmbed,
-  inventoryEmbed, itemEmbed,
+  charaEmbed, factionEmbed,
+  itemEmbed,
   statusEmbed,
   turfEmbed, hexList,
   findChar, diacritic,

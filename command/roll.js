@@ -51,17 +51,17 @@ module.exports = {
     try {
       let roll = roller.roll(input.dice);
 
-      let eval = renderer.render(roll)
-        .replace(/^(.+) = (\d+)$/m, "$1") // trims result out of eval
+      let finalRoll = renderer.render(roll)
+        .replace(/^(.+) = (\d+)$/m, "$1") // trims result out of final roll
         .replace(/\((.+?) = \d+\)/g, "[$1]") // replaces roll frames and removes =
-      if (!eval.includes("]") && input.dice.toLowerCase().includes("d")) eval = `[${eval}]` // adds frame if unframed + there is a roll in the input
+      if (!finalRoll.includes("]") && input.dice.toLowerCase().includes("d")) finalRoll = `[${finalRoll}]` // adds frame if unframed + there is a roll in the input
 
 
       input.source.reply({
         embeds: [{
           title: `${client.config("decorative_symbol")} ROLLED: \`${input.dice}\``,
           description: (input.comment ? input.comment + "\n" : "")
-          + `> ${eval} ➜ **\`${roll.value}\`**`,
+          + `> ${finalRoll} ➜ **\`${roll.value}\`**`,
           color: color(client.config("default_color"))
         }],
         flags: (input.hide ? MessageFlags.Ephemeral : undefined)

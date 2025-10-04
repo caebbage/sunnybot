@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { userEmbed, inventoryEmbed } = require("../module/helpers.js")
-const fuzzy = require("fuzzy")
+const { Inventory } = require('../module/inventory');
+const { arrayChunks, color } = require('../module/helpers');
 
 module.exports = {
   name: "profile",
@@ -75,13 +75,45 @@ module.exports = {
       if (!profile) throw new Error("The specified user could not be found! They may not yet be registered in the system.")
 
       if (input.command !== "edit") {
-        return await input.source.reply({
-          embeds: [
-            userEmbed(profile, client),
-            inventoryEmbed(profile, client)
-          ],
-          flags: (input.hide ? MessageFlags.Ephemeral : undefined)
-        })
+
+        const inventory = new Inventory(profile.get("inventory"));
+        let groupedInv, groups;
+
+        if (profile.get("inventory")) {
+          groupedInv = inventory.groupedInv(client);
+          groups = groupedInv.keys();
+
+          let components = arrayChunks([{
+            custom_id: `profile:inv:${profile.get("user_id")}:All`,
+            type: 2,
+            style: 3,
+            label: "All"
+          },
+          ...groups.map(group => ({
+            custom_id: `profile:inv:${profile.get("user_id")}:${group}`,
+            type: 2,
+            style: 4,
+            label: group
+          }))], 5).map(x => ({ type: 1, components: x }));
+
+          return await input.source.reply({
+            embeds: [
+              userEmbed(profile, client),
+              inventoryEmbed(inventory, client)
+            ],
+            components,
+            flags: (input.hide ? MessageFlags.Ephemeral : undefined)
+          })
+        } else {
+          return await input.source.reply({
+            embeds: [
+              userEmbed(profile, client),
+              inventoryEmbed(inventory, client)
+            ],
+            flags: (input.hide ? MessageFlags.Ephemeral : undefined)
+          })
+        }
+
       } else {
         return await input.source.showModal({
           title: "Edit Profile",
@@ -137,6 +169,70 @@ module.exports = {
       })
     }
   },
+  async button(interaction, inputs) {
+
+    const client = interaction.client,
+      db = client.db;
+    let input = inputs.shift();
+
+    try {
+      if (interaction.message.interactionMetadata) {
+        if (interaction.user.id !== interaction.message.interactionMetadata.user.id)
+          throw new Error("Only the original sender may utilize buttons!")
+      } else {
+        let replied = await interaction.message.channel.messages.fetch(interaction.message.reference.messageId);
+        if (interaction.user.id !== replied.author.id) {
+          throw new Error("Only the original sender may utilize buttons!")
+        }
+      }
+
+      if (input === "inv") {
+        await interaction.deferUpdate();
+
+        input = inputs.shift();
+
+        await db.users.reload()
+        let profile = db.users.find(row => row.get("user_id") == input);
+
+        if (!profile) throw new Error("The specified user could not be found!")
+
+        const inventory = new Inventory(profile.get("inventory"));
+        input = inputs.shift();
+
+        if (input === "All") {
+          return await interaction.editReply({
+            embeds: [
+              userEmbed(profile, client),
+              inventoryEmbed(inventory, client)
+            ],
+            flags: (input.hide ? MessageFlags.Ephemeral : undefined)
+          })
+        } else {
+          let groupedInv, groups;
+
+          if (profile.get("inventory")) {
+            groupedInv = inventory.groupedInv(client);
+            groups = groupedInv.keys();
+
+            return await interaction.editReply({
+              embeds: [
+                userEmbed(profile, client),
+                inventoryEmbed(new Inventory(groupedInv.get(input) || ""), client)
+              ],
+              flags: (input.hide ? MessageFlags.Ephemeral : undefined)
+            })
+          }
+        }
+      } else throw new Error("Unrecognized button!")
+    } catch (error) {
+      console.log(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+      } else {
+        await interaction.reply({ content: "An error occurred:\n" + error.message.split("\n").map(x => `> -# \`${x}\``).join("\n"), flags: MessageFlags.Ephemeral });
+      }
+    }
+  },
   async modal(interaction, inputs) {
     const db = interaction.client.db;
     let input = inputs.shift();
@@ -155,7 +251,7 @@ module.exports = {
           pronouns: interaction.fields.getTextInputValue("pronouns"),
           timezone: interaction.fields.getTextInputValue("timezone")
         };
-        
+
         await profile.assign(updates)
         await profile.save()
 
@@ -165,10 +261,10 @@ module.exports = {
           flags: MessageFlags.Ephemeral
         })
 
-        
+
         return await interaction.client.log(`**EDITED PROFILE:** <@${input}>`
           + Object.entries(updates).map(x => `\n> **${x[0]}**: ${x[1]}`).join(""))
-      }
+      } else throw new Error("Unrecognized modal!")
     } catch (error) {
       console.log(error);
       return await interaction.reply({
@@ -178,3 +274,32 @@ module.exports = {
     }
   }
 };
+
+function inventoryEmbed(inventory, client) {
+  return {
+    title: client.config("decorative_symbol") + " INVENTORY",
+    description: (!inventory?.isEmpty() ?
+      inventory.toIcoString(client).split("\n").map(x => `> ${x}`).join("\n")
+      + '\n\n-# Use `/item info` to see more about an item.'
+      : "-# You appear to have no items!"),
+    color: color(client.config("default_color")),
+    thumbnail: {
+      url: client.config("default_image")
+    },
+    timestamp: new Date().toISOString()
+  }
+}
+
+
+function userEmbed(profile, client) {
+  return {
+    title: client.config("decorative_symbol") + " " + profile.get("display_name").toUpperCase(),
+    description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0"),
+    color: color(client.config("default_color")),
+    footer: {
+      text: "@" + client.users.resolve(profile.get("user_id"))?.username
+        + " ✦ " + (profile.get("pronouns") || "N/A")
+        + " ✦ " + (profile.get("timezone") || "GMT +?")
+    }
+  }
+}

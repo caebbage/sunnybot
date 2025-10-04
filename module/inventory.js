@@ -1,27 +1,69 @@
+const diacritic = (string) => string?.normalize('NFD').replace(/\p{Diacritic}/gu)
+
 module.exports = {
   Inventory: class {
     constructor(inv) {
-      let res = {};
+      let res = new Map();
       if (inv) {
-        [...inv.matchAll(/^(.+) \(x(\d+)\)$/gm)]
-          .forEach(x => {
-            let name = x[1].trim(), amt = parseInt(x[2])
-
-            res[name] = (res[name] || 0) + amt
-          })
+        for (let [, name, amt] of [...inv.matchAll(/^(.+) \(x(\d+)\)$/gm)]) {
+          res.set(name, (res.get(name) || 0) + +amt)
+        }
       }
       this.data = res
     }
 
-    get(name) { return this.data[name] ?? 0 }
+    get(name) { return this.data.get(name) || 0 }
 
-    isEmpty() { return Object.keys(this.data).length == 0 }
+    isEmpty() { return this.data.size == 0 }
 
-    entries() { return Object.entries(this.data) }
+    entries() { return [... this.data.entries()] }
 
-    forEach(forEach) { return this.entries().forEach(item => forEach(item[0], item[1])) }
-    find(find) { return this.entries().find(item => find(item[0], item[1])) }
-    map(map) { return this.entries().map(item => map(item[0], item[1])) }
+    keys() { return [... this.data.keys()] }
+
+    forEach(forEach) { return this.entries().forEach(([item, amt]) => forEach(item, amt)) }
+    find(find) { return this.entries().find(([item, amt]) => find(item, amt)) }
+    map(map) { return this.entries().map(([item, amt]) => map(item, amt)) }
+    filter(filter) { return this.entries().filter(([item, amt]) => filter(item, amt)) }
+
+    groupedInv(client) {
+      const items = client.db.items.filter(x => x.get("item_name"));
+      const inInv = new Map();
+      items.filter(x => this.keys().includes(x.get("item_name"))).forEach(item => {
+        inInv.set(item.get("item_name"), {
+          group: item.get("category"),
+          amount: this.data.get(item.get("item_name"))
+        })
+      })
+
+      const groups = [...new Set([...inInv.entries()].map(x => x[1].group))];
+
+      let result = new Map();
+      groups.forEach(group => {
+        result.set(group,
+          [...inInv.entries().filter(([, data]) => data.group == group).map(([item, data]) => `${item} (x${data.amount})`)].join("\n")
+        )
+      })
+      return result;
+    }
+
+    validate(client) {
+      let items = new Map(client.db.items.filter(x => x.get("item_name")).map(x => ([x.get("item_name"), x])))
+      let itemNames = [...items.keys()];
+
+      this.entries().forEach(([item, amt]) => {
+        if (!items.get(item)) {
+          this.data.delete(item)
+          let softMatch = itemNames.find(name => diacritic(name.toLowerCase()) == diacritic(item.toLowerCase()))
+          if (softMatch) {
+            this.data.set(softMatch, amt)
+          }
+        }
+      })
+
+      this.sort()
+
+      return this
+    }
 
     checkLimit(monthly, perma) {
       let over = {};
@@ -35,21 +77,21 @@ module.exports = {
       return over
     }
 
-    toString() { return Object.entries(this.data).map(x => `${x[0]} (x${x[1]})`).join("\n") }
+    toString() { return this.entries().map(([item, amt]) => `${item} (x${amt})`).join("\n") }
 
     toIcoString(client) {
       let items = client.db.items.filter(x => x.get("item_name"))
 
-      return Object.entries(this.data).map(item => {
-        let ico = items.find(i => i.get("item_name") == item[0])?.get("emoji") || client.config("default_item_emoji")
+      return this.entries().map(([item, amt]) => {
+        let ico = items.find(i => i.get("item_name") == item)?.get("emoji") || client.config("default_item_emoji")
 
-        return `${ico} ${item[0]} (x${item[1]})`
+        return `${ico} ${item} (x${amt})`
       }).join("\n")
     }
 
     has(find) {
       for (let [item, amt] of (find.entries?.() || find)) {
-        if (this.get(item) - amt < 0) return false
+        if (!this.hasItem(item, amt)) return false
       }
       return true
     }
@@ -60,21 +102,20 @@ module.exports = {
     }
 
     clean() {
-      Object.keys(this.data).forEach(key => {
-        if (this.data[key] < 1) delete this.data[key]
+      this.keys().forEach((name) => {
+        if (this.data.get(name) < 1) this.data.delete(name)
       })
       return this
     }
     sort() {
-      this.data = Object.fromEntries(Object.entries(this.data).sort((a, b) => a[0].localeCompare(b[0])))
+      this.data = new Map(this.entries().sort((a, b) => a[0].localeCompare(b[0])));
       return this
     }
-
 
     take(take) {
       if (this.has(take)) {
         for (let [item, amt] of (take.entries?.() || take)) {
-          this.data[item] -= amt;
+          this.data.set(item, this.data.get(item) - amt)
         }
       } else throw new Error("The requested items are not available!")
 
@@ -83,7 +124,7 @@ module.exports = {
 
     takeItem(item, amt = 1) {
       if (this.hasItem(item, amt)) {
-        this.data[item] -= amt
+        this.data.set(this.data.get(item) - amt)
       } else throw new Error("The requested item is not available!")
 
       return this.clean()
@@ -92,14 +133,14 @@ module.exports = {
 
     give(give) {
       for (let [item, amt] of (give.entries?.() || give)) {
-        this.data[item] = (this.data[item] || 0) + amt
+        this.data.set(item, (this.data.get(item) || 0) + amt)
       }
 
       return this.sort()
     }
 
     giveItem(item, amt = 1) {
-      this.data[item] = (this.data[item] || 0) + amt
+      this.data.set((this.data.get(item) || 0) + amt)
 
       return this.sort()
     }

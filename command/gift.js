@@ -94,11 +94,10 @@ module.exports = {
             itemEmbed(item, client, true))
         }
 
-        const response = await input.source.reply({
-          content: `<@${input.receiver}>`,
-          embeds,
-          fetchReply: true
-        });
+        const response = (await input.source.reply({
+          content: `<@${input.receiver}>`, embeds,
+          withResponse: true
+        }))?.resource?.message;
 
         return await client.log(
           `**GIFTING:** `

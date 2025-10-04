@@ -98,7 +98,9 @@ module.exports = {
             color: color(client.config("default_color"))
           }],
           withResponse: true
-        }))?.resource?.message;
+        }));
+
+        response = response?.resource?.message || response;
 
         return await client.log(`**CRIME:** <@${input.user}>`
           + `\n> **Result:** Success`
@@ -126,7 +128,9 @@ module.exports = {
             color: color(client.config("default_color"))
           }],
           withResponse: true
-        }))?.resource?.message;
+        }));
+
+        response = response?.resource?.message || response;
 
         return await client.log(`**CRIME:** <@${input.user}>`
           + `\n> **Result:** Fail`

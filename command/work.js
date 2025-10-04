@@ -35,6 +35,8 @@ module.exports = {
 
       if (!profile) throw new Error("You couldn't be found in the system! The moderators may still need to register you.")
 
+      const response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
+      
       await db.work.reload()
       let work = db.work.filter(x => x.get("type") && x.get("description")),
         config = {};
@@ -98,7 +100,9 @@ module.exports = {
             color: color(client.config("default_color"))
           }],
           withResponse: true
-        }))?.resource?.message
+        }));
+
+        response = response?.resource?.message || response;
 
         return await client.log(`**WORK:** <@${input.user}>`
           + `\n> **Result:** Success`
@@ -120,7 +124,9 @@ module.exports = {
             color: color(client.config("default_color"))
           }],
           withResponse: true
-        }))?.resource?.message
+        }));
+
+        response = response?.resource?.message || response;
 
         return await client.log(`**WORK:** <@${input.user}>`
           + `\n> **Result:** Fail`,

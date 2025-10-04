@@ -34,8 +34,6 @@ module.exports = {
       let profile = db.users.find(row => row.get("user_id") == input.user);
 
       if (!profile) throw new Error("You couldn't be found in the system! The moderators may still need to register you.")
-
-      const response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
       
       await db.work.reload()
       let work = db.work.filter(x => x.get("type") && x.get("description")),

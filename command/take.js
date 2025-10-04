@@ -254,13 +254,10 @@ module.exports = {
             let items = change.items.entries();
 
             if (items.length == 1) {
-              let item = db.items.find(row => row.get("item_name") == items[0][0]);
-
               embeds.push({
                 description: `<@${profile.get("user_id")}> has lost **${items[0][0]} (x${items[0][1] || 1})**!`,
                 color: color(client.config("default_color"))
-              },
-                itemEmbed(item, client, true))
+              })
             } else {
               embeds.push({
                 description: `<@${profile.get("user_id")}> has lost the following items:\n`

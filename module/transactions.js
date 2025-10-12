@@ -29,7 +29,7 @@ async function award(interaction, target, change, setting = {}) {
         const item = db.items.find(row => row.get("item_name") == name)
 
         if (!item) throw new Error(`Item \`${name}\` not found!`)
-        itemLimit = {
+        let itemLimit = {
           hold: +item.get("hold_limit") || null,
           perma: +item.get("perma_limit") || null
         }
@@ -228,7 +228,7 @@ async function transfer(interaction, giver, receiver, change) {
         if (item.get("untradeable")?.toUpperCase() == "TRUE") throw new Error(`${name} is untradeable!`)
         if (giverInv.get(name) < amount) throw new Error(`Insufficient ${name}! You hold ${giverInv.get(name)}.`)
 
-        limit = {
+        let itemLimit = {
           hold: +item.get("hold_limit") || null,
           perma: +item.get("perma_limit") || null
         }

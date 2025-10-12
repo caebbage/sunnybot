@@ -48,8 +48,9 @@ module.exports = {
     }
   },
   async autocomplete(interaction) {
+    const client = interaction.client;
     const focused = interaction.options.getFocused(true);
-    const db = interaction.client.db
+    const db = client.db;
     try {
       if (focused.value.length <= 1) await db.hexes.reload()
 
@@ -59,7 +60,7 @@ module.exports = {
       if (filtered.length > 25) filtered.length = 25
 
       return await interaction.respond(filtered.map(choice => {
-         hex = choice.original, symbol;
+        let hex = choice.original, symbol;
         if (["cartel", "triad"].includes(hex.get("controlled_by"))) {
           symbol = db.factions.find(f => f.get("faction_name") == hex.get("controlled_by"))?.get("simple_emoji")
         } else { symbol = client.config("contested_emoji") }

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js')
-const { color, diacritic, turfEmbed, toTitleCase } = require("../module/helpers.js")
+const { color, diacritic, hexEmbed, toTitleCase } = require("../module/helpers.js")
 const fuzzy = require("fuzzy")
 
 const { DiceRoller, DiscordRollRenderer } = require("dice-roller-parser"),
@@ -39,8 +39,8 @@ module.exports = {
       const faction = db.factions.find(x => x.get("faction_name") == input.faction);
       if (!faction) throw new Error("The faction specified is invalid!")
 
-      await db.turf.reload()
-      const hex = db.turf.find(hex => hex.get("turf_id") == input.hex)
+      await db.hexes.reload()
+      const hex = db.hexes.find(hex => hex.get("hex_id") == input.hex)
       if (!hex) throw new Error("The hex requested could not be found!")
       if (hex.get("controlled_by") == input.faction) throw new Error("This hex is already under your control!")
       if (hex.get("is_base") == "TRUE") throw new Error("This hex has base development and is uncapturable!")
@@ -67,11 +67,11 @@ module.exports = {
         await new Promise(r => setTimeout(r, 2000));
 
         await input.source.followUp({
-          embeds: [turfEmbed(hex, client)]
+          embeds: [hexEmbed(hex, client)]
         })
 
         return await client.log(
-          `**TURF CLAIMED:** ${input.hex}`
+          `**HEX CLAIMED:** ${input.hex}`
           + `\n> **controlled_by:** ${input.faction}`
           + `\n> **hold:** 1`,
           {
@@ -132,12 +132,12 @@ module.exports = {
         client = interaction.client,
         db = client.db;
 
-      if (focused.value.length <= 1) await db.turf.reload()
+      if (focused.value.length <= 1) await db.hexes.reload()
 
       let faction = interaction.options.get("faction")?.value || "none",
-        data = db.turf.filter(hex => hex.get("turf_id") && hex.get("controlled_by") != faction && hex.get("is_base") != "TRUE");
+        data = db.hexes.filter(hex => hex.get("hex_id") && hex.get("controlled_by") != faction && hex.get("is_base") != "TRUE");
 
-      let filtered = fuzzy.filter(focused.value, data, { extract: hex => `${hex.get("turf_id")} // ${diacritic(hex.get("turf_name"))}` });
+      let filtered = fuzzy.filter(focused.value, data, { extract: hex => `${hex.get("hex_id")} // ${diacritic(hex.get("hex_name"))}` });
       if (filtered.length > 25) filtered.length = 25
 
       return await interaction.respond(filtered.map(choice => {
@@ -147,8 +147,8 @@ module.exports = {
         } else { symbol = client.config("contested_emoji") }
 
         return {
-          name: `${hex.get("turf_id")} ${symbol} ${hex.get("turf_name")}`.trim(),
-          value: hex.get("turf_id")
+          name: `${hex.get("hex_id")} ${symbol} ${hex.get("hex_name")}`.trim(),
+          value: hex.get("hex_id")
         }
       }))
     } catch (error) {

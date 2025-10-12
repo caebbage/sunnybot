@@ -1,6 +1,7 @@
+const { limit } = require('./helpers.js');
 const { Inventory } = require('./inventory.js');
 
-async function award(interaction, target, change) {
+async function award(interaction, target, change, setting = {}) {
   let log = [];
   const client = interaction.client,
     db = client.db;
@@ -28,18 +29,18 @@ async function award(interaction, target, change) {
         const item = db.items.find(row => row.get("item_name") == name)
 
         if (!item) throw new Error(`Item \`${name}\` not found!`)
-        limit = {
+        itemLimit = {
           hold: +item.get("hold_limit") || null,
           perma: +item.get("perma_limit") || null
         }
 
-        if (limit.hold && inventory.get(name) + amount > limit.hold) {
-          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and the user currently holds ${inventory.get(name)}.`)
-        } else if (limit.perma && permaLimit.get(name) + amount > limit.perma) {
-          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's lifetime limit is ${limit.perma}, and the user has had ${permaLimit.get(name)}.`)
+        if (itemLimit.hold && inventory.get(name) + amount > itemLimit.hold) {
+          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's holding limit is ${itemLimit.hold}, and the user currently holds ${inventory.get(name)}.`)
+        } else if (itemLimit.perma && permaLimit.get(name) + amount > itemLimit.perma) {
+          throw new Error(`Transaction denied: cannot give ${amount} of ${name}\nThe item's lifetime limit is ${itemLimit.perma}, and the user has had ${permaLimit.get(name)}.`)
         }
 
-        if (limit.perma) permaLimit.giveItem(name, amount)
+        if (itemLimit.perma) permaLimit.giveItem(name, amount)
       }
 
       profile.set("inventory", inventory.give(change.items).toString());
@@ -51,18 +52,28 @@ async function award(interaction, target, change) {
 
     if ((change.heat || change.reputation || change.statuses) && !chara) throw new Error("Character not found.")
     if (change.heat) {
-      const oldVal = +chara.get("heat") || 0,
+      const oldVal = +chara.get("heat") || 0;
+      let newVal;
+      if (setting?.toCap) {
+        newVal = limit(oldVal + change.heat, 0, +client.config("heat_cap")); 
+      } else {
         newVal = oldVal + change.heat;
-      if (newVal > client.config("heat_cap")) throw new Error(`Transaction would exceed Heat cap (${client.config("heat_cap")}).`)
+        if (newVal > +client.config("heat_cap")) throw new Error(`Transaction would exceed Heat cap (${client.config("heat_cap")}).`)
+      }
 
       chara.set("heat", newVal)
       log.push(`> **heat:** +${change.heat} (${oldVal} → ${newVal})`)
     }
 
     if (change.reputation) {
-      const oldVal = +chara.get("reputation") || 0,
+      const oldVal = +chara.get("reputation") || 0;
+      let newVal = oldVal + change.reputation;
+      if (setting?.toCap) {
+        newVal = limit(oldVal + change.reputation, 0, +client.config("reputation_cap"));
+      } else {
         newVal = oldVal + change.reputation;
-      if (newVal > client.config("reputation_cap")) throw new Error(`Transaction would exceed Reputation cap (${client.config("reputation_cap")}).`)
+        if (newVal > +client.config("reputation_cap")) throw new Error(`Transaction would exceed Reputation cap (${client.config("reputation_cap")}).`)
+      }
 
       chara.set("reputation", newVal)
       log.push(`> **reputation:** +${change.reputation} (${oldVal} → ${newVal})`)
@@ -78,7 +89,7 @@ async function award(interaction, target, change) {
       log.push(`> **status:** Gained ` + newStatuses.filter(x => x).map(x => `\`${x.trim()}\``).join(", "))
     }
 
-    if (interaction.replied) throw new Error("Transaction already processed!")
+    if (!setting?.noReplyCheck && interaction.replied) throw new Error("Transaction already processed!")
     if (change.money || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
@@ -214,18 +225,18 @@ async function transfer(interaction, giver, receiver, change) {
         const item = db.items.find(row => row.get("item_name") == name)
 
         if (!item) throw new Error(`Item \`${name}\` not found!`)
-
-        if (giverInv.get(name) < amount) throw new Error(`Insufficient item ${name}! The giver holds ${giverInv.get(name)}.`)
+        if (item.get("untradeable")?.toUpperCase() == "TRUE") throw new Error(`${name} is untradeable!`)
+        if (giverInv.get(name) < amount) throw new Error(`Insufficient ${name}! You hold ${giverInv.get(name)}.`)
 
         limit = {
           hold: +item.get("hold_limit") || null,
           perma: +item.get("perma_limit") || null
         }
 
-        if (limit.hold && receiverInv.get(name) + amount > limit.hold) {
-          throw new Error(`Transaction denied: cannot transfer ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and the user currently holds ${receiverInv.get(name)}.`)
-        } else if (limit.perma && permaLimit.get(name) + amount > limit.perma) {
-          throw new Error(`Transaction denied: cannot transfer ${amount} of ${name}\nThe item's lifetime limit is ${limit.perma}, and the user has had ${permaLimit.get(name)}.`)
+        if (itemLimit.hold && receiverInv.get(name) + amount > itemLimit.hold) {
+          throw new Error(`Transaction denied: cannot transfer ${amount} of ${name}\nThe item's holding limit is ${itemLimit.hold}, and the user currently holds ${receiverInv.get(name)}.`)
+        } else if (itemLimit.perma && permaLimit.get(name) + amount > itemLimit.perma) {
+          throw new Error(`Transaction denied: cannot transfer ${amount} of ${name}\nThe item's lifetime limit is ${itemLimit.perma}, and the user has had ${permaLimit.get(name)}.`)
         }
       }
 

@@ -1,14 +1,14 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { turfEmbed, diacritic } = require("../module/helpers.js");
+const { hexEmbed, diacritic } = require("../module/helpers.js");
 
 module.exports = {
-  name: "turf",
+  name: "hex",
   slash: new SlashCommandBuilder()
-    .setName('turf')
-    .setDescription("Check the info for a turf.")
+    .setName('hex')
+    .setDescription("Check the info for a map hex.")
     .addStringOption(option => option
       .setName('hex')
-      .setDescription("The turf to look up.")
+      .setDescription("The hex to look up.")
       .setAutocomplete(true)
       .setRequired(true)
     )
@@ -20,23 +20,23 @@ module.exports = {
   async parse(interaction, message, inputs) {
     return await this.execute(interaction.client, {
       source: interaction,
-      id: interaction.options.getString("id"),
-      hide: interaction.options.getBoolean("hide") ?? false
+      hex: interaction.options.getString("hex"),
+      hide: interaction.options.getBoolean("hide") || false
     })
   },
   async execute(client, input) {
     const db = client.db;
 
     try {
-      if (!input.id) throw new Error("Provide a name for the turf!")
+      if (!input.hexEmbed) throw new Error("Provide the hex's ID!")
 
-      await db.turf.reload();
-      let turf = db.turf?.find(row => row.get("turf_id") == input.id);
+      await db.hexes.reload();
+      let hex = db.hexes?.find(row => row.get("hex_id") == input.hex);
 
-      if (!turf) throw new Error("The specified turf could not be found!")
+      if (!hex) throw new Error("The specified hex could not be found!")
 
       return await input.source.reply({
-        embeds: [turfEmbed(turf, client)],
+        embeds: [hexEmbed(hex, client)],
         flags: input.hide ? MessageFlags.Ephemeral : undefined
       })
     } catch (error) {
@@ -51,22 +51,22 @@ module.exports = {
     const focused = interaction.options.getFocused(true);
     const db = interaction.client.db
     try {
-      if (focused.value.length <= 1) await db.turf.reload()
+      if (focused.value.length <= 1) await db.hexes.reload()
 
-      let data = db.turf.filter(x => x.get("turf_id"))
+      let data = db.hexes.filter(x => x.get("hex_id"))
 
-      let filtered = fuzzy.filter(focused.value, data, { extract: x => `${x.get("turf_id")} // ${diacritic(x.get("turf_name"))}` })
+      let filtered = fuzzy.filter(focused.value, data, { extract: x => `${x.get("hex_id")} // ${diacritic(x.get("hex_name"))}` })
       if (filtered.length > 25) filtered.length = 25
 
       return await interaction.respond(filtered.map(choice => {
-        let hex = choice.original, symbol;
+         hex = choice.original, symbol;
         if (["cartel", "triad"].includes(hex.get("controlled_by"))) {
           symbol = db.factions.find(f => f.get("faction_name") == hex.get("controlled_by"))?.get("simple_emoji")
         } else { symbol = client.config("contested_emoji") }
 
         return {
-          name: `${hex.get("turf_id")} ${symbol} ${hex.get("turf_name")}`.trim(),
-          value: hex.get("turf_id")
+          name: `${hex.get("hex_id")} ${symbol} ${hex.get("hex_name")}`.trim(),
+          value: hex.get("hex_id")
         }
       }))
     } catch (error) {

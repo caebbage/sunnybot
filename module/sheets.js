@@ -43,18 +43,11 @@ module.exports = async (client) => {
         }) ?? this.data()
       },
       data: [],
-      find(...args) {
-        return this.data.find(...args)
-      },
-      sort(...args) {
-        return this.data.sort(...args)
-      },
-      filter(...args) {
-        return this.data.filter(...args)
-      },
-      map(...args) {
-        return this.data.map(...args)
-      },
+      find(...args) { return this.data.find(...args) },
+      sort(...args) { return this.data.sort(...args) },
+      filter(...args) { return this.data.filter(...args) },
+      forEach(...args) { return this.data.forEach(...args) },
+      map(...args) { return this.data.map(...args) },
       toObjects() { return this.data.map(x => x.toObject()) }
     }
     await res.reload();
@@ -62,7 +55,7 @@ module.exports = async (client) => {
     return res
   }
 
-  for (let sheet of ["users", "charas", "factions", "turf", "items", "tasks", "work", "crime", "reactroles", "statuses"]) {
+  for (let sheet of ["users", "charas", "factions", "hexes", "items", "tasks", "work", "crime", "reactroles", "statuses"]) {
     client.db[sheet] = await setup(client.config(`${sheet}_sheet`))
   }
 
@@ -116,15 +109,9 @@ module.exports = async (client) => {
       },
       data: [],
       list: client.sheets.commands.src,
-      find(...args) {
-        return this.data.find(...args)
-      },
-      filter(...args) {
-        return this.data.filter(...args)
-      },
-      map(...args) {
-        return this.data.map(...args)
-      },
+      find(...args) { return this.data.find(...args) },
+      filter(...args) { return this.data.filter(...args) },
+      map(...args) { return this.data.map(...args) },
       async get(name) {
         try {
           let id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")

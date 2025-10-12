@@ -46,8 +46,7 @@ module.exports = {
     const db = client.db;
 
     try {
-      await db.turf.reload()
-      await db.charas.reload()
+      await db.hexes.reload()
       await db.factions.reload()
 
       let factions = db.factions.filter(row => row.get("faction_name"));
@@ -90,7 +89,7 @@ module.exports = {
       }
 
       await db.factions.reload()
-      await db.turf.reload()
+      await db.hexes.reload()
 
       let factions = db.factions.filter(row => row.get("faction_name"));
       let faction = factions.find(fac => fac.get("faction_name") == input)

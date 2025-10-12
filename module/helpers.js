@@ -7,7 +7,7 @@ const money = (amt, client) => client.config("money_format").replace("{{MONEY}}"
 
 function charaEmbed(chara, client) {
   const faction = client.db.factions.find(x => x.get("faction_name") == chara.get("faction")),
-    turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")),
+    hexes = client.db.hexes.filter(x => x.get("controlled_by") == faction.get("faction_name")),
     statuses = client.db.statuses.filter(x => x.get("status_name") && chara.get("statuses")?.split(", ").includes(x.get("status_name")));
 
 
@@ -19,12 +19,12 @@ function charaEmbed(chara, client) {
       sharp: +chara.get("sharp") || 0,
       other: []
     },
-    turf: parseBonus(turfs, "turf_id"),
+    hexes: parseBonus(hexes, "hex_id"),
     status: parseBonus(statuses, "status_name"),
     faction: parseBonus([faction], "faction_name")
   };
 
-  let stats = sumBonus([bonuses.base, ...bonuses.turf, ...bonuses.status, ...bonuses.faction])
+  let stats = sumBonus([bonuses.base, ...bonuses.hexes, ...bonuses.status, ...bonuses.faction])
 
   let result = {
     title: (faction.get("pin_emoji") || faction.get("simple_emoji")) + " " + chara.get("full_name").toUpperCase(),
@@ -49,7 +49,7 @@ function charaEmbed(chara, client) {
       + "```"
       + "\n> **STAT MODIFIERS:**\n" + "```ansi\n"
       + factionBonus(faction, client)
-      + (bonuses.turf?.length ? "\n\n" + turfBonus(bonuses.turf, faction) : "")
+      + (bonuses.hexes?.length ? "\n\n" + hexBonus(bonuses.hexes, faction) : "")
       + (bonuses.status?.length ? "\n\n" + statusMods(bonuses.status) : "")
       + "```"
       + "\n-# Stat modifiers are already added to the stats block."
@@ -83,9 +83,9 @@ function charaEmbed(chara, client) {
 }
 
 function factionEmbed(faction, client) {
-  const turfs = client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name"));
+  const hexes = client.db.hexes.filter(x => x.get("controlled_by") == faction.get("faction_name"));
   const bonuses = {
-    turf: parseBonus(turfs, "turf_id"),
+    hexes: parseBonus(hexes, "hex_id"),
     faction: parseBonus([faction], "faction_name")
   };
 
@@ -96,11 +96,11 @@ function factionEmbed(faction, client) {
       + `\n> Based in ${faction.get("based")}.`
       + `\n> ♔ *${faction.get("leader")}*`
       + `\n\n👤\` MEMBERS ✦ \` ${client.db.charas.filter(x => x.get("chara_name") && x.get("faction") == faction.get("faction_name")).length}`
-      + `\n📍\` HEXES OWNED ✦ \` ${client.db.turf.filter(x => x.get("controlled_by") == faction.get("faction_name")).length}/99`
+      + `\n📍\` HEXES OWNED ✦ \` ${client.db.hexes.filter(x => x.get("controlled_by") == faction.get("faction_name")).length}/99`
       + `\n💳\` FUNDS ✦ \` ${faction.get("remaining_funds")}k`
       + `\n📈\` INCOME ✦ \` ${faction.get("weekly_funds")}k`
-      + "\n\n> **FACTION & TURF BONUSES:**\n" + "```ansi\n" + factionBonus(faction)
-      + (turfBonus(bonuses.turf, faction) ? "\n\n" + turfBonus(bonuses.turf, faction) : "")
+      + "\n\n> **FACTION & HEX BONUSES:**\n" + "```ansi\n" + factionBonus(faction)
+      + (hexBonus(bonuses.hexes, faction) ? "\n\n" + hexBonus(bonuses.hexes, faction) : "")
       + "```"
     ,
     color: color(faction.get("main_color") || client.config("default_color")),
@@ -163,12 +163,12 @@ function sumBonus(bonuses) {
   return sum
 }
 
-function turfBonus(bonuses, faction) {
+function hexBonus(bonuses, faction) {
   if (!bonuses.length) return;
 
   const total = sumBonus(bonuses);
 
-  let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${bonuses.length}[0m[2;37m turfs:[0m`
+  let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${bonuses.length}[0m[2;37m hexes:[0m`
 
   if (!total.hot && !total.cool && !total.hard && !total.sharp && !total.other?.length) {
     res += `\n[2;37m  ‣[2;30m No bonuses... yet![0m`;    
@@ -207,10 +207,10 @@ function statusEmbed(status, client) {
   }
 }
 
-function turfEmbed(turf, client) {
-  let bonuses = parseBonus([turf], "turf_id")[0];
+function hexEmbed(hex, client) {
+  let bonuses = parseBonus([hex], "hex_id")[0];
 
-  let faction = client.db.factions.find(x => x.get("faction_name") == turf.get("controlled_by"))
+  let faction = client.db.factions.find(x => x.get("faction_name") == hex.get("controlled_by"))
 
   let res = "";
   statNames.forEach(stat => {
@@ -224,14 +224,14 @@ function turfEmbed(turf, client) {
   return {
     title: `${faction?.get("pin_emoji") ??
       client.config("decorative_symbol")
-      }【${turf.get("turf_id")}】 ${turf.get("turf_name")?.toUpperCase() || ""}`,
+      }【${hex.get("hex_id")}】 ${hex.get("hex_name")?.toUpperCase() || ""}`,
     description:
-      "` CONTROLLED BY ` " + (faction ? "The " + toTitleCase(faction.get("faction_name")) : turf.get("controlled_by"))
-      + ("\n`   HOLD ` " + (turf.get("hold") || "0") + ((turf.get("is_base") == "TRUE") ? ` ${client.config("decorative_symbol")} Base established` : ""))
-      + (turf.get("description") ? "\n" + turf.get("description")?.split("\n").filter(x => x).map(x => `> ${x}`).join("\n") : "")
+      "` CONTROLLED BY ` " + (faction ? "The " + toTitleCase(faction.get("faction_name")) : hex.get("controlled_by"))
+      + ("\n`   HOLD ` " + (hex.get("hold") || "0") + ((hex.get("is_base") == "TRUE") ? ` ${client.config("decorative_symbol")} Base established` : ""))
+      + (hex.get("description") ? "\n" + hex.get("description")?.split("\n").filter(x => x).map(x => `> ${x}`).join("\n") : "")
       + (res ? "\n```ansi\n" + colorStats(res, false) + "```" : ""),
     color: color(faction?.get("main_color") || client.config("default_color")),
-    thumbnail: { url: turf.get("turf_thumb") || faction?.get("crest_image") || client.config("default_image") }
+    thumbnail: { url: hex.get("thumb") || faction?.get("crest_image") || client.config("default_image") }
   }
 }
 
@@ -264,30 +264,30 @@ function statusMods(statuses) {
 }
 
 function hexList(client, faction) {
-  let turfs = client.db.turf.filter(x => x.get("turf_id"));
+  let hexes = client.db.hexes.filter(x => x.get("hex_id"));
   let factions = client.db.factions.filter(x => x.get("faction_name"));
 
   let list;
   let groups;
 
   if (faction == "all") {
-    list = turfs.map(turf => {
-      let emoji = factions.find(x => x.get("faction_name") == turf.get("controlled_by"))?.get("simple_emoji") || client.config("contested_emoji");
-      let color = factions.find(x => x.get("faction_name") == turf.get("controlled_by"))?.get("asci_color") || 37;
-      let base = turf.get("is_base").toUpperCase() == "TRUE"
+    list = hexes.map(hex => {
+      let emoji = factions.find(x => x.get("faction_name") == hex.get("controlled_by"))?.get("simple_emoji") || client.config("contested_emoji");
+      let color = factions.find(x => x.get("faction_name") == hex.get("controlled_by"))?.get("asci_color") || 37;
+      let base = hex.get("is_base").toUpperCase() == "TRUE"
 
-      let result = `[2;${color}m【${turf.get("turf_id")}】${emoji}${base ? "🏠" : ""}[0m[2;37m ‣ [2;30m`
+      let result = `[2;${color}m【${hex.get("hex_id")}】${emoji}${base ? "🏠" : ""}[0m[2;37m ‣ [2;30m`
 
       let stats = [];
-      if (turf.get("hot")) stats.push("HOT +" + turf.get("hot"))
-      if (turf.get("cool")) stats.push("COOL +" + turf.get("cool"))
-      if (turf.get("hard")) stats.push("HARD +" + turf.get("hard"))
-      if (turf.get("sharp")) stats.push("SHARP +" + turf.get("sharp"))
+      if (hex.get("hot")) stats.push("HOT +" + hex.get("hot"))
+      if (hex.get("cool")) stats.push("COOL +" + hex.get("cool"))
+      if (hex.get("hard")) stats.push("HARD +" + hex.get("hard"))
+      if (hex.get("sharp")) stats.push("SHARP +" + hex.get("sharp"))
       if (stats.length) result += `❰ ${stats.join(", ")} ❱`
 
-      if (turf.get("misc_bonus")) {
+      if (hex.get("misc_bonus")) {
         if (stats.length) result += " + Effect"
-        else result += turf.get("misc_bonus")
+        else result += hex.get("misc_bonus")
       }
 
       result += `[0m`
@@ -299,11 +299,11 @@ function hexList(client, faction) {
   } else {
     let color = factions.find(x => x.get("faction_name") == faction)?.get("ansi_color") || 37
 
-    list = turfs.filter(x => x.get("controlled_by") == faction).map(turf => {
-      let base = turf.get("is_base").toUpperCase() == "TRUE"
+    list = hexes.filter(x => x.get("controlled_by") == faction).map(hex => {
+      let base = hex.get("is_base").toUpperCase() == "TRUE"
 
-      let bonuses = sumBonus([turf]);
-      let res = `[2;${color}m【${turf.get("turf_id")}】${base ? "🏠 " : ""}[0m${turf.get("turf_name") ? `[2;37m${turf.get("turf_name")}:` : ""}`
+      let bonuses = sumBonus([hex]);
+      let res = `[2;${color}m【${hex.get("hex_id")}】${base ? "🏠 " : ""}[0m${hex.get("hex_name") ? `[2;37m${hex.get("hex_name")}:` : ""}`
 
       if (bonuses.hot || bonuses.cool || bonuses.hard || bonuses.sharp) res += "\n[2;37m  ‣[2;30m "
       if (bonuses.hot) res += `❰ HOT +${bonuses.hot} ❱ `
@@ -336,6 +336,7 @@ function itemEmbed(item, client, simple = false) {
     footer: (item.get("hold_limit") || item.get("monthly_limit") || item.get("perma_limit") ? (() => {
       let limit = []
       if (item.get("hold_limit")) limit.push(`${item.get("hold_limit")} held at once`)
+      if (item.get("daily_limit")) limit.push(`${item.get("daily_limit")} per day`)
       if (item.get("monthly_limit")) limit.push(`${item.get("monthly_limit")} per month`)
       if (item.get("perma_limit")) limit.push(`${item.get("perma_limit")} per lifetime`)
 
@@ -481,7 +482,7 @@ module.exports = {
   charaEmbed, factionEmbed,
   itemEmbed,
   statusEmbed,
-  turfEmbed, hexList,
+  hexEmbed, hexList,
   findChar, diacritic,
   parseEmbed, formatEmbed,
   pad, arrayChunks, removeEmpty, color,

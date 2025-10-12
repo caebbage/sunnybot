@@ -135,12 +135,13 @@ module.exports = {
         if (focused.value.length <= 1) await db.users.reload()
 
         const inventory = new Inventory(db.users.find(x => x.get("user_id") == interaction.user.id ?? "").get("inventory"));
+        const items = db.items.filter(item => inventory.keys().includes(item.get("item_name")) && item.get("untradeable")?.toUpperCase() != "TRUE")
 
-        let filtered = fuzzy.filter(diacritic(focused.value), inventory.keys(), { extract: x => diacritic(x) })
+        let filtered = fuzzy.filter(diacritic(focused.value), items, { extract: x => diacritic(x.get("item_name")) })
         if (filtered.length > 25) filtered.length = 25
 
         return await interaction.respond(
-          filtered.map(choice => ({ name: choice.original, value: choice.original }))
+          filtered.map(choice => ({ name: choice.original.get("item_name"), value: choice.original.get("item_name") }))
         )
       }
     } catch (error) {

@@ -150,14 +150,19 @@ module.exports = {
         let inventory = new Inventory(profile.get("inventory")),
           limit = {
             hold: parseInt(item.get("hold_limit")) || null,
+            daily: parseInt(item.get("daily_limit")) || null,
             monthly: parseInt(item.get("monthly_limit")) || null,
             perma: parseInt(item.get("perma_limit")) || null
           },
+          daily = new Inventory(profile.get("daily_limit")),
           monthly = new Inventory(profile.get("monthly_limit")),
           perma = new Inventory(profile.get("perma_limit"));
 
         if (limit.hold && inventory.get(name) + amount > limit.hold) {
           throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThe item's holding limit is ${limit.hold}, and you are holding ${inventory.get(name)}.`)
+
+        } else if (limit.daily && daily.get(name) + amount > limit.daily) {
+          throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThe item's daily limit is ${limit.daily}, and you have bought ${daily.get(name)}.`)
 
         } else if (limit.monthly && monthly.get(name) + amount > limit.monthly) {
           throw new Error(`Purchase denied: cannot buy ${amount} of ${name}\nThe item's monthly limit is ${limit.monthly}, and you have bought ${monthly.get(name)}.`)
@@ -175,6 +180,7 @@ module.exports = {
 
         profile.set("money", moneyChange.new)
         profile.set("inventory", inventory.giveItem(name, amount).toString())
+        if (limit.daily) profile.set("daily_limit", daily.giveItem(name, amount).toString())
         if (limit.monthly) profile.set("monthly_limit", monthly.giveItem(name, amount).toString())
         if (limit.perma) profile.set("perma_limit", perma.giveItem(name, amount).toString())
 

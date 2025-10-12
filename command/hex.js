@@ -28,7 +28,7 @@ module.exports = {
     const db = client.db;
 
     try {
-      if (!input.hexEmbed) throw new Error("Provide the hex's ID!")
+      if (!input.hex) throw new Error("Provide the hex's ID!")
 
       await db.hexes.reload();
       let hex = db.hexes?.find(row => row.get("hex_id") == input.hex);

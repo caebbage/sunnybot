@@ -54,7 +54,7 @@ module.exports = {
     try {
       if (focused.value.length <= 1) await db.hexes.reload()
 
-      let data = db.hexes.filter(x => x.get("hex_id"))
+      let data = db.hexes.filter(x => x.get("hex_id") && x.get("hex_id") !== "blank")
 
       let filtered = fuzzy.filter(focused.value, data, { extract: x => `${x.get("hex_id")} // ${diacritic(x.get("hex_name"))}` })
       if (filtered.length > 25) filtered.length = 25

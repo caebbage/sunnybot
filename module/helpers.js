@@ -264,7 +264,7 @@ function statusMods(statuses) {
 }
 
 function hexList(client, faction) {
-  let hexes = client.db.hexes.filter(x => x.get("hex_id"));
+  let hexes = client.db.hexes.filter(x => x.get("hex_id") && x.get("hex_id") !== "blank");
   let factions = client.db.factions.filter(x => x.get("faction_name"));
 
   let list;
@@ -276,8 +276,11 @@ function hexList(client, faction) {
       let color = factions.find(x => x.get("faction_name") == hex.get("controlled_by"))?.get("asci_color") || 37;
       let base = hex.get("is_base").toUpperCase() == "TRUE"
 
-      let result = `[2;${color}m【${hex.get("hex_id")}】${emoji}${base ? "🏠" : ""}[0m[2;37m ‣ [2;30m`
+      let result = `[2;${color}m【${hex.get("hex_id")}】${emoji}${base ? "🏠" : ""} ${hex.get("hex_name")}`.trim()
 
+      if (hex.get("hot") || hex.get("cool") || hex.get("hard") || hex.get("sharp") || hex.get("misc_bonus"))
+        result += "\n[2;37m  ‣ [2;30m";
+      
       let stats = [];
       if (hex.get("hot")) stats.push("HOT +" + hex.get("hot"))
       if (hex.get("cool")) stats.push("COOL +" + hex.get("cool"))
@@ -295,7 +298,7 @@ function hexList(client, faction) {
       return result
     })
 
-    groups = arrayChunks(list, 15);
+    groups = arrayChunks(list, 12);
   } else {
     let color = factions.find(x => x.get("faction_name") == faction)?.get("ansi_color") || 37
 

@@ -135,7 +135,7 @@ module.exports = {
       if (focused.value.length <= 1) await db.hexes.reload()
 
       let faction = interaction.options.get("faction")?.value || "none",
-        data = db.hexes.filter(hex => hex.get("hex_id") && hex.get("controlled_by") != faction && hex.get("is_base") != "TRUE");
+        data = db.hexes.filter(hex => hex.get("hex_id") && hex.get("hex_id") !== "blank" && hex.get("controlled_by") != faction && hex.get("is_base") != "TRUE");
 
       let filtered = fuzzy.filter(focused.value, data, { extract: hex => `${hex.get("hex_id")} // ${diacritic(hex.get("hex_name"))}` });
       if (filtered.length > 25) filtered.length = 25

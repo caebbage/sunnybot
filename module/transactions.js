@@ -55,10 +55,10 @@ async function award(interaction, target, change, setting = {}) {
       const oldVal = +chara.get("heat") || 0;
       let newVal;
       if (setting?.toCap) {
-        newVal = limit(oldVal + change.heat, 0, +client.config("heat_cap")); 
+        newVal = limit(oldVal + change.heat, 0, 5); 
       } else {
         newVal = oldVal + change.heat;
-        if (newVal > +client.config("heat_cap")) throw new Error(`Transaction would exceed Heat cap (${client.config("heat_cap")}).`)
+        if (newVal > 5) throw new Error(`Transaction would exceed Heat cap of 5.`)
       }
 
       chara.set("heat", newVal)
@@ -69,10 +69,10 @@ async function award(interaction, target, change, setting = {}) {
       const oldVal = +chara.get("reputation") || 0;
       let newVal = oldVal + change.reputation;
       if (setting?.toCap) {
-        newVal = limit(oldVal + change.reputation, 0, +client.config("reputation_cap"));
+        newVal = limit(oldVal + change.reputation, 0, 9999);
       } else {
         newVal = oldVal + change.reputation;
-        if (newVal > +client.config("reputation_cap")) throw new Error(`Transaction would exceed Reputation cap (${client.config("reputation_cap")}).`)
+        if (newVal > 9999) throw new Error(`Transaction would exceed Reputation cap of 9999.`)
       }
 
       chara.set("reputation", newVal)

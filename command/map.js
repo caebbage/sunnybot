@@ -72,7 +72,7 @@ module.exports = {
         const list = hexList(client, "all")
 
         let embed = {
-          title: `📍 HEXES IN PLAY`,
+          title: "`📍 HEXES IN PLAY`",
           description: "```ansi\n" + list[page] + "```\n-# Use `/hex hex:id` to view info on a specific hex.",
           color: color(client.config("default_color")),
           thumbnail: {
@@ -119,7 +119,7 @@ function buttons(client, page = -1) {
     custom_id: `map:info`,
     type: 2,
     style: 4,
-    label: `${client.config("decorative_symbol")} Info`
+    label: `${client.config("decorative_symbol")} Map`
   })
 
   if (page == -1) {

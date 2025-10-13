@@ -152,6 +152,7 @@ module.exports = {
       for (let stat of Object.keys(stats)) {
         if (isNaN(+stats[stat])) throw new Error("Stats input appears malformed (" + interaction.fields.getTextInputValue("bonus_stats") + "). Please retry command!")
         updates[stat] = stats[stat].trim()
+        if (updates[stat] == 0) updates[stat] == ""
       }
 
       let response = (await interaction.deferReply({ withResponse: true }))?.resource?.message;

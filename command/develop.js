@@ -128,14 +128,16 @@ module.exports = {
 
     try {
       await db.hexes.reload()
-      let hex = db.hexes.find(row => row.get("hex_id") === input);
+      const hex = db.hexes.find(row => row.get("hex_id") === input),
+        faction = db.factions.find(x => x.get("faction_name") == hex.get("controlled_by"));
 
       if (!hex) throw new Error("The specified character could not be found!")
 
       let updates = {
         hex_name: interaction.fields.getTextInputValue("hex_name"),
         description: interaction.fields.getTextInputValue("description"),
-        misc_bonus: interaction.fields.getTextInputValue("misc_bonus")
+        misc_bonus: interaction.fields.getTextInputValue("misc_bonus"),
+        color: faction.get("strong_hex_color_name")
       };
 
       if (+(hex.get("hold") || 0) < 2) updates.hold = +(hex.get("hold") || 0) + 1;

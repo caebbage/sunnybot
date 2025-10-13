@@ -62,6 +62,7 @@ module.exports = {
 
         hex.set("hold", 1)
         hex.set("controlled_by", input.faction)
+        hex.set("color", faction.get("weak_hex_color_name"))
         await hex.save()
 
         await new Promise(r => setTimeout(r, 2000));

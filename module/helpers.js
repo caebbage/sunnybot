@@ -225,6 +225,7 @@ function hexEmbed(hex, client) {
     title: `${faction?.get("pin_emoji") ??
       client.config("decorative_symbol")
       }【${hex.get("hex_id")}】 ${hex.get("hex_name")?.toUpperCase() || ""}`,
+    url: hex.get("link"),
     description:
       "` CONTROLLED BY ` " + (faction ? "The " + toTitleCase(faction.get("faction_name")) : hex.get("controlled_by"))
       + ("\n`   HOLD ` " + (hex.get("hold") || "0") + ((hex.get("is_base") == "TRUE") ? ` ${client.config("decorative_symbol")} base estabished` : ""))

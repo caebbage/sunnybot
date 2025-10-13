@@ -109,7 +109,7 @@ module.exports = {
 
         let embed = {
           title: `📍 ${faction.get("faction_name").toUpperCase()} TERRITORY`,
-          description: "```ansi\n" + list[page] + "```",
+          description: "```ansi\n" + list[page] + "```-# Use `/hex hex:id` to view info on a specific hex.",
           color: color(faction.get("main_color") || client.config("default_color")),
           thumbnail: {
             url: faction.get("crest_image")

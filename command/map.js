@@ -73,7 +73,7 @@ module.exports = {
 
         let embed = {
           title: `📍 HEXES IN PLAY`,
-          description: "```ansi\n" + list[page] + "```",
+          description: "```ansi\n" + list[page] + "```\n-# Use `/hex hex:id` to view info on a specific hex.",
           color: color(client.config("default_color")),
           thumbnail: {
             url: client.config("default_image")

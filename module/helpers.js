@@ -31,7 +31,7 @@ function charaEmbed(chara, client) {
     url: chara.get("app"),
     description: "-# " + [
       chara.get("rank").replace(/^(.+) (.+)$/, "$1 `$2`") +
-      ` of the \`${chara.get("family").toUpperCase()}\` Family`,
+      ` of the \`${chara.get("family")?.toUpperCase() || "???"}\` Family`,
       `\`${chara.get("pronouns")}\``,
       `\`${chara.get("height")}\``
     ].join(" ✦ ")

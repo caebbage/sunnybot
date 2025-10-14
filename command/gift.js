@@ -68,6 +68,8 @@ module.exports = {
       if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
       if (["money", "item", "to-user"].includes(input.command)) {
+        if (input.receiver == input.giver) throw new Error("You cannot gift things to yourself!")
+
         await db.users.reload()
         giver.profile = db.users.find(row => row.get("user_id") == input.giver)
         receiver.profile = db.users.find(row => row.get("user_id") == input.receiver);

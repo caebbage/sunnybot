@@ -60,7 +60,7 @@ module.exports = {
         .setName("amount")
         .setDescription("The amount to use of the item.")
         .setMinValue(1)
-        .setMaxValue(10)
+        .setMaxValue(100)
       )
     ),
   async parse(interaction) {
@@ -188,7 +188,7 @@ module.exports = {
         await profile.save()
 
         let response = (await input.source.reply({
-          content: `Bought **${name} (x${amount})**!`,
+          content: `Bought **${name} (x${amount}) for ${money(moneyChange.deduct, client)}**!`,
           embeds: [itemEmbed(item, client, true)],
           withResponse: true
         }))?.resource?.message
@@ -215,6 +215,8 @@ module.exports = {
         const name = input.use,
           amount = input.amount ?? 1;
 
+        if (item.get("use_cap") && amount > +item.get("use_cap") || amount > 10) throw new Error(`You may only use ${item.get("use_cap" || 10)} ${input.use} at a time!`)
+
         const inventory = new Inventory(profile.get("inventory")),
           perma = new Inventory(profile.get("perma_limit"));
 
@@ -225,7 +227,7 @@ module.exports = {
           throw new Error(`Transaction denied: cannot use ${amount} of ${name}\nYou don't have that many!`)
         }
 
-        if (item.get("category") == "Gacha" && item.get("gacha_src")) {
+        if (item.get("gacha_src")) {
           let src = client.sheets.config.src;
           if (!src.sheetsById[item.get("gacha_src")]) src.loadInfo()
 

@@ -4,20 +4,17 @@ module.exports = {
   name: Events.MessageReactionRemove,
   async execute(reaction, user) {
     try {
-      let reactRoles = user.client.db.reactroles.toObjects();
+      let reactRoles = user.client.db.reactroles.filter(x => x.get("message_id") && x.get("message_id") == reaction.message.id);
 
-      if (reactRoles.map(x => x.message_id).includes(reaction.message.id)) {
-        for (let row of reactRoles.filter(x => x.message_id == reaction.message.id)) {
-          if (row.emoji == reaction.emoji.toString()) {
-            let member = await reaction.message.guild.members.fetch(user.id);
+      for (let row of reactRoles) {
+        if (row.get("emoji") == reaction.emoji.toString()) {
+          let member = await reaction.message.guild.members.fetch(user.id);
 
-            member.roles.remove(row.role_id);
-          }
+          member.roles.remove(row.get("role_id"));
         }
       }
     } catch (error) {
       console.log(error)
     }
-  },
+  }
 };
-

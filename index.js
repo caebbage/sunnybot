@@ -1,18 +1,48 @@
 
-require('dotenv').config({silent: process.env.NODE_ENV === 'production'});
+require('dotenv').config({ silent: process.env.NODE_ENV === 'production' });
+
 
 const Discord = require("discord.js"),
   client = new Discord.Client({
     intents: 46595,
+    makeCache: Discord.Options.cacheWithLimits({
+      ...Discord.Options.DefaultMakeCacheSettings,
+      ReactionManager: {
+        maxSize: 0,
+        keepOverLimit: (react) => reactionCheck(react)
+      },
+      MessageManager: {
+        maxSize: 0,
+        keepOverLimit: (msg) => reactRoleCheck(msg)
+      },
+    }),
     partials: ['MESSAGE', 'CHANNEL', 'REACTION']
   }),
   { promisify } = require("util"),
   readdir = promisify(require("fs").readdir);
 
-  client.commands = new Discord.Collection();
-  client.slash = {};
+client.commands = new Discord.Collection();
+client.slash = {};
 
-  require("./module/sheets.js")(client);
+function reactionCheck(react) {
+  let db = client.db.reactroles;
+  if (!db) return true
+  else {
+    if (client.db.reactroles.find(row => row.get("message_id") == react.message.id && row.get("emoji") == react.emoji)) return true
+    return false
+  }
+}
+
+function reactRoleCheck(message) {
+  let db = client.db.reactroles;
+  if (!db) return true
+  else {
+    if (client.db.reactroles.find(row => row.get("message_id") == message.id)) return true
+    return false
+  }
+}
+
+require("./module/sheets.js")(client);
 
 const init = async () => {
   // load events
@@ -24,9 +54,9 @@ const init = async () => {
     // Bind the client to any event, before the existing arguments
     // provided by the discord.js event. 
     if (event.once) {
-      client.once(event.name, (...args) => event.execute (...args));
+      client.once(event.name, (...args) => event.execute(...args));
     } else {
-      client.on(event.name, (...args) => event.execute (...args));
+      client.on(event.name, (...args) => event.execute(...args));
     }
   });
 
@@ -47,7 +77,7 @@ const init = async () => {
       console.log(`  [WARN] ${file} command data incomplete.`)
     }
   });
-  
+
 
   client.login(process.env.DISCORD_CLIENT_TOKEN);
 };

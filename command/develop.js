@@ -39,13 +39,10 @@ module.exports = {
       if (hex.get("controlled_by") != input.faction)
         throw new Error("The hex does not belong to this faction!")
 
-      if (+(hex.get("hold") || 0) >= 2 || hex.get("is_base") == "TRUE")
-        throw new Error("This hex is not eligible for development!")
-
       return await input.source.showModal({
         title: hex.get("is_base") != "TRUE"
           ? `Upgrading ${input.hex} to Hold ${+(hex.get("hold") || 0) + 1}`
-          : `Constructing on ${input.hex}`,
+          : `Developing on ${input.hex}`,
         custom_id: "develop:" + input.hex,
         components: [
           {
@@ -102,7 +99,7 @@ module.exports = {
 
       let faction = interaction.options.get("faction")?.value || "none",
         data = db.hexes.filter(hex => hex.get("hex_id") && hex.get("hex_id") !== "blank"
-          && hex.get("controlled_by") == faction && (+(hex.get("hold") || 0) < 2 || hex.get("is_base") != "TRUE"));
+          && hex.get("controlled_by") == faction);
 
       let filtered = fuzzy.filter(focused.value, data, { extract: x => `${x.get("hex_id")} // ${diacritic(x.get("hex_name"))}` })
       if (filtered.length > 25) filtered.length = 25
@@ -136,13 +133,13 @@ module.exports = {
       let updates = {
         hex_name: interaction.fields.getTextInputValue("hex_name"),
         description: interaction.fields.getTextInputValue("description"),
-        misc_bonus: interaction.fields.getTextInputValue("misc_bonus"),
-        color: faction.get("strong_hex_color_name")
+        misc_bonus: interaction.fields.getTextInputValue("misc_bonus")
       };
 
       if (+(hex.get("hold") || 0) < 2) updates.hold = +(hex.get("hold") || 0) + 1;
       else if (hex.get("is_base") != "TRUE") updates.is_base = "TRUE"
-      else throw new Error("This hex is not developable!")
+      
+      updates.color = (hex.get("is_base") == "TRUE" || updates.is_base) ? faction.get("base_hex_color_name") : faction.get("strong_hex_color_name")
 
       let stats = /(?<hot>[\+\-0-9]+) *\/ *(?<cool>[\+\-0-9]+) *\/ *(?<hard>[\+\-0-9]+) *\/ *(?<sharp>[\+\-0-9]+)/
         .exec(interaction.fields.getTextInputValue("bonus_stats"))?.groups;

@@ -108,6 +108,8 @@ async function pullPool(message, name, customCmd, override) {
         return res
       }),
       output.embeds[0], options.embedFormat)
+    
+    output.content = [...new Set(output.embeds.map(x => x.content?.trim()).filter(x => x))].join(" ")
   } else {
     if (error) output.embeds = formatEmbed([error], output.embeds[0], options.embedFormat)
     else output.embeds = formatEmbed(["Subcommand not found... make sure you've typed your choice correctly."], output.embeds[0], options.embedFormat)

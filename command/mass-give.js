@@ -308,7 +308,7 @@ module.exports = {
       }
       if (change.reputation) {
         embeds.push({
-          description: `**${input.reputation} Reputation!** gained!`,
+          description: `**${input.reputation} Reputation** gained!`,
           color: color(client.config("default_color"))
         })
       }

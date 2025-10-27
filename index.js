@@ -23,9 +23,10 @@ const Discord = require("discord.js"),
 
 client.commands = new Discord.Collection();
 client.slash = {};
+client.customCommands = new Discord.Collection();
 
 function reactionCheck(react) {
-  let db = client.db.reactroles;
+  let db = client.db?.reactroles;
   if (!db) return true
   else {
     if (client.db.reactroles.find(row => row.get("message_id") == react.message.id && row.get("emoji") == react.emoji)) return true
@@ -34,7 +35,7 @@ function reactionCheck(react) {
 }
 
 function reactRoleCheck(message) {
-  let db = client.db.reactroles;
+  let db = client.db?.reactroles;
   if (!db) return true
   else {
     if (client.db.reactroles.find(row => row.get("message_id") == message.id)) return true

@@ -29,7 +29,6 @@ module.exports = {
           message.author.send("An error occurred:\n`" + error.message + "`")
         }
       } else {
-        await message.client.db.actions.reload();
         const customCmd = await message.client.db.actions.get(actionName);
 
         if (!customCmd) return

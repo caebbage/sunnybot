@@ -1,28 +1,16 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { color } = require("../module/helpers.js")
-
-const { DiceRoller, DiscordRollRenderer } = require("dice-roller-parser"),
-  roller = new DiceRoller(),
-  renderer = new DiscordRollRenderer();
 
 module.exports = {
   name: "refresh",
   slash: new SlashCommandBuilder()
     .setName('refresh')
-    .setDescription(`Refresh bot configuration.`)
+    .setDescription(`Refresh bot configuration & custom commands.`)
     ,
   async parse(interaction, message, inputs) {
     var input = {};
 
-    if (interaction) {
-      input = {
-        source: interaction
-      }
-    } else {
-      input = {
-        source: message
-      }
-    }
+    if (interaction) input = { source: interaction }
+    else input = { source: message }
 
     return await this.execute(input.source.client, input)
   },
@@ -30,6 +18,9 @@ module.exports = {
 
     try {
       await client.sheets.config.refresh();
+
+      client.customCommands.each(action => action.lastChecked.setTime(0))
+
       return await input.source.reply({
         content: "Data refreshed!",
         flags: MessageFlags.Ephemeral

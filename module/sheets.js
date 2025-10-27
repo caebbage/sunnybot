@@ -74,11 +74,11 @@ module.exports = async (client) => {
       let extras = [];
       if (extra?.sender) extras.push(`Executed by <@${extra.sender}>`)
       if (extra?.url) extras.push(`${extra.url}`)
-      
+
       log.send({
         embeds: [{
           description: description.trim()
-          + (extras.length ? ('\n\n-# ' + extras.join(" | ")) : ""),
+            + (extras.length ? ('\n\n-# ' + extras.join(" | ")) : ""),
           timestamp: new Date().toISOString()
         }]
       })
@@ -114,14 +114,30 @@ module.exports = async (client) => {
       map(...args) { return this.data.map(...args) },
       async get(name) {
         try {
-          let id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")
-          if (!id) return;
+          let action = client.customCommands.get(name);
+
+          if (!action || (new Date()).getTime() - action.lastChecked.getTime() >= 3 * 60 * 1000) {
+            let id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")
+            if (!id) {
+              await this.reload()
+              id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")
+              if (!id) return
+
+              await this.list.loadInfo()
+            }
+
+            let data = (await this.list.sheetsById[id].getRows())?.filter(x => x.get("weight"));
+            if (!data?.length) return
+
+            data.lastChecked = new Date();
+
+            if (data) client.customCommands.set(name, data);
+          }
           
-          await this.list.loadInfo()
-          return (await this.list.sheetsById[id].getRows())?.filter(x => x.get("weight")) ?? []
+          return client.customCommands.get(name);
         } catch (error) {
           console.log(error)
-          return null
+          return
         }
       }
     }

@@ -38,6 +38,8 @@ module.exports = async (client) => {
     let res = {
       sheet: client.sheets.config.src.sheetsById[sheetId],
       async reload() {
+        await this.sheet?.loadHeaderRow()
+
         this.data = await this.sheet?.getRows({
           limit: 500
         }) ?? this.data()
@@ -115,8 +117,8 @@ module.exports = async (client) => {
       async get(name) {
         try {
           let action = client.customCommands.get(name);
-
-          if (!action || (new Date()).getTime() - action.lastChecked.getTime() >= 3 * 60 * 1000) {
+          
+          if (!action || (new Date()).getTime() - action.lastChecked.getTime() >= 60 * 1000) {
             let id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")
             if (!id) {
               await this.reload()
@@ -126,12 +128,16 @@ module.exports = async (client) => {
               await this.list.loadInfo()
             }
 
-            let data = (await this.list.sheetsById[id].getRows())?.filter(x => x.get("weight"));
+            let sheet = await this.list.sheetsById[id];
+            if (!sheet) return
+
+            await sheet.loadHeaderRow();
+            let data = (await sheet.getRows({ limit: 500 })).filter(x => x.get("weight"));
             if (!data?.length) return
 
             data.lastChecked = new Date();
 
-            if (data) client.customCommands.set(name, data);
+            client.customCommands.set(name, data);
           }
           
           return client.customCommands.get(name);

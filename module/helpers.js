@@ -179,8 +179,8 @@ function hexBonus(bonuses, faction) {
     if (total[stat]) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} +${total[stat]} ❱[0m`;
   })
 
-  if (total.other?.length) {
-    res += "\n" + [...bonuses.other.values()].map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
+  if (total.other?.values()?.length) {
+    res += "\n" + [...total.other.values()].map(x => `[2;37m  ‣[2;30m ` + x[0] + (x[1] > 1 ? ` x${x[1]}[0m` : "")).join("\n")
   }
 
   return res

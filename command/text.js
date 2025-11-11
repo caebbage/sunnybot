@@ -13,7 +13,7 @@ module.exports = {
       .setDescription("Which style the text will be formatted in.")
       .addChoices(...Object.keys(styleText.charSets).map(val => {
         return {
-          name: styleText.format(val, val),
+          name: `${styleText.format(val, val)} (${val})`,
           value: val
         }
       }))

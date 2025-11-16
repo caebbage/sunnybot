@@ -82,14 +82,21 @@ async function pullPool(message, name, customCmd, override) {
 
   let subcommand = (options.multiroll ? /(.*?)(\d+)?$/m.exec(input)?.[1]?.trim() : input);
 
-  let validResults = data.filter(row => (row.subcommand || "default").split(";")
-    .map(x => x.toLowerCase().trim()).includes(subcommand?.toLowerCase() || "default") && !["config", "error"].includes(row.weight)),
+  let validResults = data.filter(row => {
+    if (["config", "error"].includes(row.weight)) return false
+
+    let subs = (row.subcommand || "default").split(";").map(x => x.toLowerCase().trim())
+    if (!subs.includes(subcommand?.toLowerCase() || !subs.includes("*"))) return false
+
+    return true
+  }),
     times = Math.min((options.multiroll ? parseInt(/\d+$/.exec(input) || 1) : 1), 10)
 
   if (validResults.length) {
     output.embeds = formatEmbed(
       drawPool(validResults, times).map(pull => {
         let res = pull.value.replace(/{{@USER}}/gi, `<@${message.author.id}>`)
+        res = pull.value.replace(/{{INPUT}}/gi, subcommand)
 
         let fields = pull.value.match(/{{.*?}}/g);
 

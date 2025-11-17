@@ -86,8 +86,8 @@ async function pullPool(message, name, customCmd, override) {
     if (["config", "error"].includes(row.weight)) return false
 
     let subs = (row.subcommand || "default").split(";").map(x => x.toLowerCase().trim())
-    if (!subs.includes(subcommand?.toLowerCase()) || !subs.includes("*")) return false
-
+    if (!subs.includes(subcommand?.toLowerCase() || "default") && !subs.includes("*")) return false
+    
     return true
   }),
     times = Math.min((options.multiroll ? parseInt(/\d+$/.exec(input) || 1) : 1), 10)

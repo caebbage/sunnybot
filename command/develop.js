@@ -2,7 +2,7 @@ const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { hexEmbed, diacritic } = require("../module/helpers.js");
 
 module.exports = {
-  name: "develop",
+  // name: "develop",
   slash: new SlashCommandBuilder().setName('develop')
     .setDescription(`Develop a hex!`)
     .addStringOption(option => option.setName("faction")

@@ -12,7 +12,7 @@ const { REST, Routes } = require('discord.js'),
 
   commandFiles.forEach(file => {
     const command = require('./command/' + file);
-    if ('slash' in command && 'parse' in command) {
+    if (command.name && 'slash' in command && 'parse' in command) {
       commands.push(command.slash.toJSON());
       console.log(`  [command] "${command.name}" loaded.`)
     } else {

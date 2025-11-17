@@ -66,7 +66,7 @@ const init = async () => {
   console.log(`Loading a total of ${commandFiles.length} commands.`)
   commandFiles.forEach(file => {
     const command = require('./command/' + file);
-    if ('parse' in command) {
+    if (command.name && command.parse) {
       client.commands.set(command.name, command);
       if (command.prefix) {
         client.slash[command.name] = command.name;

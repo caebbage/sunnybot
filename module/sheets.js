@@ -57,9 +57,14 @@ module.exports = async (client) => {
     return res
   }
 
-  for (let sheet of ["users", "charas", "factions", "hexes", "items", "tasks", "work", "crime", "reactroles", "statuses"]) {
-    client.db[sheet] = await setup(client.config(`${sheet}_sheet`))
+  client.resetData = async function () {
+    for (let sheet of ["users", "charas", "factions", "hexes", "items", "tasks", "work", "crime", "reactroles", "statuses"]) {
+      client.db[sheet] = await setup(client.config(`${sheet}_sheet`))
+    }
+    console.log("[REFRESH] Data loaded")
   }
+
+  await client.resetData();
 
   for (let row of client.db.reactroles.filter(row => row.get("message_id"))) {
     try {
@@ -117,7 +122,7 @@ module.exports = async (client) => {
       async get(name) {
         try {
           let action = client.customCommands.get(name);
-          
+
           if (!action || (new Date()).getTime() - action.lastChecked.getTime() >= 60 * 1000) {
             let id = this.data.find(x => x.get("command_name") === name)?.get("sheet_id")
             if (!id) {
@@ -139,7 +144,7 @@ module.exports = async (client) => {
 
             client.customCommands.set(name, data);
           }
-          
+
           return client.customCommands.get(name);
         } catch (error) {
           console.log(error)

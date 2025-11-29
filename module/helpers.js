@@ -461,11 +461,11 @@ function formatEmbed(src, format, parse = false) {
   })
 }
 
-const randBetween = (min, max) => {
+const randBetween = (min, max, decimals = 0) => {
   let a = +min;
   let b = +max - +min + 1;
 
-  return a + Math.floor(Math.random() * b);
+  return a + Math.floor((Math.random() * b) * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
 const limit = (num, min, max) => {

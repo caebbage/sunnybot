@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
   fuzzy = require("fuzzy"),
-  { itemEmbed, color, money, diacritic } = require("../module/helpers.js"),
+  { itemEmbed, color, money, diacritic, randBetween } = require("../module/helpers.js"),
   { drawPool } = require("../module/gacha.js"),
   { Inventory } = require("../module/inventory.js");
 
@@ -35,7 +35,7 @@ module.exports = {
       .setName("buy")
       .setDescription("Buy an item.")
       .addStringOption(option => option
-        .setName("buy")
+        .setName("item")
         .setDescription("The item being bought.")
         .setAutocomplete(true)
         .setRequired(true)
@@ -51,7 +51,7 @@ module.exports = {
       .setName("use")
       .setDescription("Use an item, displaying its info and displaying results if gacha.")
       .addStringOption(option => option
-        .setName("use")
+        .setName("item")
         .setDescription("The item being used.")
         .setAutocomplete(true)
         .setRequired(true)
@@ -69,8 +69,6 @@ module.exports = {
       user: interaction.user.id,
       command: interaction.options.getSubcommand(),
       item: interaction.options.getString("item"),
-      buy: interaction.options.getString("buy"),
-      use: interaction.options.getString("use"),
       amount: interaction.options.getInteger("amount"),
       hide: interaction.options.getBoolean("hide") ?? false
     })
@@ -118,7 +116,7 @@ module.exports = {
         })
 
       } else if (input.command === "buy") {
-        let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.buy) : []
+        let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.item) : []
 
         if (!item) throw new Error("The specified item could not be found!")
 
@@ -200,9 +198,10 @@ module.exports = {
         )
 
       } else if (input.command === "use") {
-        let response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
+        let response = (await input.source.deferReply({ withResponse: true }))?.resource?.message,
+          embeds = [];
 
-        let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.use) : []
+        let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.item) : []
 
         if (!item) throw new Error("The specified item could not be found!")
 
@@ -212,10 +211,10 @@ module.exports = {
         let profile = db.users.find(row => row.get("user_id") == input.user)
         if (!profile) throw new Error("Your user profile could not be found!")
 
-        const name = input.use,
+        const name = input.item,
           amount = input.amount ?? 1;
 
-        if (item.get("use_cap") && amount > +item.get("use_cap") || amount > 10) throw new Error(`You may only use ${item.get("use_cap" || 10)} ${input.use} at a time!`)
+        if (item.get("use_cap") && amount > +item.get("use_cap") || amount > 10) throw new Error(`You may only use ${item.get("use_cap" || 10)} ${input.item} at a time!`)
 
         const inventory = new Inventory(profile.get("inventory")),
           perma = new Inventory(profile.get("perma_limit"));
@@ -227,7 +226,41 @@ module.exports = {
           throw new Error(`Transaction denied: cannot use ${amount} of ${name}\nYou don't have that many!`)
         }
 
-        if (item.get("gacha_src")) {
+        embeds.push(itemEmbed(item, client, true))
+
+        if (item.get("use_text")) {
+          let text = item.get("use_text");
+          let repl = text.match(/\{\{.+?\}\}/g);
+
+          repl.forEach(match => {
+            if (match.includes("RANGE")) {
+              let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
+              params.min = +(params.min)
+              params.max = +(params.max)
+              if (!params.min || !params.max) return
+              if (params.decimals) params.decimals = +params.decimals
+
+              text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
+            }
+          })
+          
+          embeds.push({
+            description: text,
+            color: color(config("default_color"))
+          })
+        }
+
+        if (!item.get("gacha_src")) {
+          profile.set("inventory", inventory.toString())
+
+          if (input.source.replied) throw new Error("Transaction already processed!")
+          await profile.save()
+
+          await client.log(
+            `**ITEM USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>`,
+            { url: response.url }
+          )
+        } else {
           let src = client.sheets.config.src;
           if (!src.sheetsById[item.get("gacha_src")]) src.loadInfo()
 
@@ -291,44 +324,31 @@ module.exports = {
             inventory: inventory.toString(),
             perma_limit: perma.toString()
           })
-          await profile.save();
 
-          await input.source.editReply({
-            content: `**${name} (x${amount})** used!`,
-            embeds: [itemEmbed(item, client, true),
-            {
-              title: `${config("decorative_symbol")} ${item.get("gacha_intro") || name}`.toUpperCase(),
-              description: list.map(x => `### ${x}`).join("\n"),
-              footer: {
-                text: item.get("gacha_outro")
-              },
-              color: color(config("default_color")),
-              timestamp: new Date().toISOString()
-            }]
+          embeds.push({
+            title: `${config("decorative_symbol")} ${item.get("gacha_intro") || name}`.toUpperCase(),
+            description: list.map(x => `### ${x}`).join("\n"),
+            footer: {
+              text: item.get("gacha_outro")
+            },
+            color: color(config("default_color")),
+            timestamp: new Date().toISOString()
           })
 
-          return await client.log(
+          await profile.save();
+
+          await client.log(
             `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
             + (res.money != 0 ? `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n` : "")
             + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : ""),
             { url: response.url }
           )
-        } else {
-          profile.set("inventory", inventory.toString())
-
-          if (input.source.replied) throw new Error("Transaction already processed!")
-          await profile.save()
-
-          await input.source.editReply({
-            content: `**${name} (x${amount})** used!`,
-            embeds: [itemEmbed(item, client, true)]
-          })
-
-          return await client.log(
-            `**ITEM USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>`,
-            { url: response.url }
-          )
         }
+
+        return await input.source.editReply({
+          content: `**${name} (x${amount})** used!`,
+          embeds
+        })
       }
     } catch (error) {
       console.log(error);
@@ -345,8 +365,9 @@ module.exports = {
     }
   },
   async autocomplete(interaction) {
-    const focused = interaction.options.getFocused(true);
-    const db = interaction.client.db;
+    const options = interaction.options,
+      focused = options.getFocused(true),
+      db = interaction.client.db;
 
     // item = all items
     // buy = purchaseable items
@@ -355,7 +376,7 @@ module.exports = {
     try {
       if (focused.value.length <= 1) await db.items.reload()
 
-      if (focused.name === "item") {
+      if (options.getSubcommand() === "info") {
         let data = db.items.filter(item => item.get("item_name") && item.get("category"))
         let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("item_name")) })
 
@@ -364,7 +385,7 @@ module.exports = {
         return await interaction.respond(
           filtered.map(choice => ({ name: choice.original.get("item_name"), value: choice.original.get("item_name") }))
         )
-      } else if (focused.name === "buy") {
+      } else if (options.getSubcommand() === "buy") {
 
         let data = db.items.filter(item => item.get("item_name") && item.get("category")
           && item.get("in_shop")?.toUpperCase() == "TRUE" && item.get("price") && !isNaN(item.get("price")) && item.get("shop_stock") !== "0")
@@ -375,7 +396,7 @@ module.exports = {
         return await interaction.respond(
           filtered.map(choice => ({ name: choice.original.get("item_name"), value: choice.original.get("item_name") }))
         )
-      } else if (focused.name === "use") {
+      } else if (options.getSubcommand() === "use") {
         if (focused.value.length <= 1) await db.users.reload()
 
         let profile = db.users.find(row => row.get("user_id") == interaction.user.id),

@@ -17,13 +17,15 @@ module.exports = {
   async execute(client, input) {
 
     try {
+      await input.source.deferReply({flags: MessageFlags.Ephemeral});
+
       await client.sheets.config.refresh();
+      await client.resetData();
 
       client.customCommands.each(action => action.lastChecked.setTime(0))
 
-      return await input.source.reply({
-        content: "Data refreshed!",
-        flags: MessageFlags.Ephemeral
+      return await input.source.editReply({
+        content: "Data refreshed!"
       })
     } catch (error) {
       console.log(error);

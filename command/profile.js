@@ -100,7 +100,7 @@ module.exports = {
           return await input.source.reply({
             embeds: [
               userEmbed(profile, client),
-              inventoryEmbed(inventory, client)
+              inventoryEmbed(inventory, client, "ALL")
             ],
             components,
             flags: (input.hide ? MessageFlags.Ephemeral : undefined)
@@ -204,7 +204,7 @@ module.exports = {
           return await interaction.editReply({
             embeds: [
               userEmbed(profile, client),
-              inventoryEmbed(inventory, client)
+              inventoryEmbed(inventory, client, "ALL")
             ],
             flags: (input.hide ? MessageFlags.Ephemeral : undefined)
           })
@@ -218,7 +218,7 @@ module.exports = {
             return await interaction.editReply({
               embeds: [
                 userEmbed(profile, client),
-                inventoryEmbed(new Inventory(groupedInv.get(input) || ""), client)
+                inventoryEmbed(new Inventory(groupedInv.get(input) || ""), client, input?.toUpperCase() || "ALL")
               ],
               flags: (input.hide ? MessageFlags.Ephemeral : undefined)
             })
@@ -276,9 +276,9 @@ module.exports = {
   }
 };
 
-function inventoryEmbed(inventory, client) {
+function inventoryEmbed(inventory, client, category) {
   return {
-    title: client.config("decorative_symbol") + " INVENTORY",
+    title: client.config("decorative_symbol") + " INVENTORY" + (category ? " ― " + category : ""),
     description: (!inventory?.isEmpty() ?
       inventory.toIcoString(client).split("\n").map(x => `> ${x}`).join("\n")
       + '\n\n-# Use `/item info` to see more about an item.'

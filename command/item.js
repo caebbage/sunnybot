@@ -243,7 +243,7 @@ module.exports = {
               text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
             }
           })
-          
+
           embeds.push({
             description: text,
             color: color(config("default_color"))
@@ -308,7 +308,22 @@ module.exports = {
               }
             },
             other(val) {
-              list.push([val])
+              let text = val;
+              let repl = text.match(/\{\{.+?\}\}/g);
+
+              repl.forEach(match => {
+                if (match.includes("RANGE")) {
+                  let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
+                  params.min = +(params.min)
+                  params.max = +(params.max)
+                  if (!params.min || !params.max) return
+                  if (params.decimals) params.decimals = +params.decimals
+
+                  text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
+                }
+              })
+              
+              list.push([text])
             }
           }
 

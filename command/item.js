@@ -232,7 +232,8 @@ module.exports = {
           let text = item.get("use_text");
           let repl = text.match(/\{\{.+?\}\}/g);
 
-          repl.forEach(match => {
+          if (repl) {
+            repl.forEach(match => {
             if (match.includes("RANGE")) {
               let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
               params.min = +(params.min)
@@ -243,6 +244,7 @@ module.exports = {
               text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
             }
           })
+          }
 
           embeds.push({
             description: text,
@@ -311,18 +313,20 @@ module.exports = {
               let text = val;
               let repl = text.match(/\{\{.+?\}\}/g);
 
-              repl.forEach(match => {
-                if (match.includes("RANGE")) {
-                  let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
-                  params.min = +(params.min)
-                  params.max = +(params.max)
-                  if (!params.min || !params.max) return
-                  if (params.decimals) params.decimals = +params.decimals
+              if (repl) {
+                repl.forEach(match => {
+                  if (match.includes("RANGE")) {
+                    let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
+                    params.min = +(params.min)
+                    params.max = +(params.max)
+                    if (!params.min || !params.max) return
+                    if (params.decimals) params.decimals = +params.decimals
 
-                  text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
-                }
-              })
-              
+                    text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
+                  }
+                })
+              }
+
               list.push([text])
             }
           }

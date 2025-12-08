@@ -1,12 +1,11 @@
 
 require('dotenv').config({ silent: process.env.NODE_ENV === 'production' });
 
-
-const Discord = require("discord.js"),
-  client = new Discord.Client({
+const { Client, Options, Partials, Collection } = require("discord.js"),
+  client = new Client({
     intents: 46595,
-    makeCache: Discord.Options.cacheWithLimits({
-      ...Discord.Options.DefaultMakeCacheSettings,
+    makeCache: Options.cacheWithLimits({
+      ...Options.DefaultMakeCacheSettings,
       ReactionManager: {
         maxSize: 0,
         keepOverLimit: (react) => reactionCheck(react)
@@ -16,14 +15,14 @@ const Discord = require("discord.js"),
         keepOverLimit: (msg) => reactRoleCheck(msg)
       },
     }),
-    partials: ['MESSAGE', 'CHANNEL', 'REACTION']
+    partials: [ Partials.Message, Partials.Channel, Partials.Reaction ]
   }),
   { promisify } = require("util"),
   readdir = promisify(require("fs").readdir);
 
-client.commands = new Discord.Collection();
+client.commands = new Collection();
 client.slash = {};
-client.customCommands = new Discord.Collection();
+client.customCommands = new Collection();
 
 function reactionCheck(react) {
   let db = client.db?.reactroles;

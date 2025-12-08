@@ -252,6 +252,18 @@ module.exports = {
           })
         }
 
+        if (item.get("track_use")) {
+          client.sheets.config.item.sheetsById[client.config(`uselog_sheet`)].addRow({
+            date: (new Date()).toISOString(),
+            user_id: input.user,
+            username: client.users.resolve(input.user)?.username || "N/A",
+            channel_id: input.source.channel?.id,
+            channel_name: input.source.channel?.name || "N/A",
+            item_name: input.item,
+            amount: input.amount || 1
+          })
+        }
+
         if (!item.get("gacha_src")) {
           profile.set("inventory", inventory.toString())
 
@@ -263,7 +275,7 @@ module.exports = {
             { url: response.url }
           )
         } else {
-          let src = client.sheets.config.src;
+          let src = client.sheets.config.item;
           if (!src.sheetsById[item.get("gacha_src")]) src.loadInfo()
 
           let gacha = (await src.sheetsById[item.get("gacha_src")].getRows())

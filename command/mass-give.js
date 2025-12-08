@@ -287,7 +287,7 @@ module.exports = {
           let item = db.items.find(row => row.get("item_name") == items[0][0]);
 
           embeds.push({
-            description: `**${items[0][0]} (x${items[0][1] || 1})** awawrded!`,
+            description: `**${items[0][0]} (x${items[0][1] || 1})** awarded!`,
             color: color(client.config("default_color"))
           },
             itemEmbed(item, client, true))

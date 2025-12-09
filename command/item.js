@@ -464,6 +464,8 @@ module.exports = {
 };
 
 function drawGacha(pool) {
+  let poolSize = 0
+
   pool.forEach((item) => {
     poolSize += +item.get("weight")
   })

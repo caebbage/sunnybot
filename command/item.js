@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
   fuzzy = require("fuzzy"),
   { itemEmbed, color, money, diacritic, randBetween } = require("../module/helpers.js"),
-  { drawPool } = require("../module/gacha.js"),
   { Inventory } = require("../module/inventory.js");
 
 module.exports = {
@@ -254,7 +253,7 @@ module.exports = {
 
         if (item.get("track_use")) {
           client.sheets.config.item.sheetsById[client.config(`uselog_sheet`)].addRow({
-            date: (new Date()).toISOString(),
+            date: (new Date()).toString(),
             user_id: input.user,
             username: client.users.resolve(input.user)?.username || "N/A",
             channel_id: input.source.channel?.id,
@@ -279,9 +278,10 @@ module.exports = {
           if (!src.sheetsById[item.get("gacha_src")]) src.loadInfo()
 
           let gacha = (await src.sheetsById[item.get("gacha_src")].getRows())
-            ?.filter((row) => row.get("weight") && row.get("type") && row.get("value")).map(x => x.toObject());
+            ?.filter((row) => row.get("weight") && row.get("type") && row.get("value") && row.get("stock") !== "0"),
+            update = new Set();
 
-          if (!gacha.length) throw new Error("Gacha pool could not be found.")
+          if (!gacha?.length) throw new Error("Gacha pool could not be found.")
 
           let res = {
             money: 0,
@@ -342,10 +342,24 @@ module.exports = {
               list.push([text])
             }
           }
+          
 
-          drawPool(gacha, amount * mult).forEach(res => {
-            getGacha[res.type]?.(res.value)
-          })
+          for (let i = 0; i < amount * mult; i++) {
+            gacha = gacha.filter(item => !["0", 0].includes(item.get("stock")));
+
+            let pull = drawGacha(gacha);
+
+            if (pull.get("stock") !== "" && pull.get("stock") !== "0") {
+              pull.set("stock", +pull.get("stock") - 1);
+              update.add(pull);
+            }
+
+            getGacha[pull.get("type")]?.(pull.get("value"))
+          }
+
+          for (let entry of update) {
+            await entry.save()
+          }
 
           oldValue = profile.get("money");
 
@@ -448,3 +462,19 @@ module.exports = {
     }
   }
 };
+
+function drawGacha(pool) {
+  pool.forEach((item) => {
+    poolSize += +item.get("weight")
+  })
+
+  console.log(poolSize)
+
+  let rng = Math.random() * poolSize;
+
+  for (let item of pool) {
+    if (rng < +item.get("weight")) {
+      return item
+    } else rng -= +item.get("weight")
+  }
+}

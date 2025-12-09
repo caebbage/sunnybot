@@ -468,8 +468,6 @@ function drawGacha(pool) {
     poolSize += +item.get("weight")
   })
 
-  console.log(poolSize)
-
   let rng = Math.random() * poolSize;
 
   for (let item of pool) {

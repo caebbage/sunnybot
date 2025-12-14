@@ -103,6 +103,10 @@ module.exports = {
           .setDescription("The amount of Money to give.")
           .setMinValue(1)
         )
+        .addIntegerOption(option => option.setName("points")
+          .setDescription("The amount of Points to give.")
+          .setMinValue(1)
+        )
         .addStringOption(option => option.setName("item")
           .setDescription("The item to receive.")
           .setAutocomplete(true)
@@ -120,6 +124,10 @@ module.exports = {
         .setDescription("Give to ALL users.")
         .addIntegerOption(option => option.setName("money")
           .setDescription("The amount of Money to give.")
+          .setMinValue(1)
+        )
+        .addIntegerOption(option => option.setName("points")
+          .setDescription("The amount of Points to give.")
           .setMinValue(1)
         )
         .addStringOption(option => option.setName("item")
@@ -154,6 +162,7 @@ module.exports = {
 
       tags: interaction.options.getString("tags"),
       money: interaction.options.getInteger("money"),
+      points: interaction.options.getInteger("points"),
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
       itemList: interaction.options.getString("item-list"),
@@ -163,6 +172,7 @@ module.exports = {
     const db = client.db;
     let change = {
       money: input.money,
+      points: input.points,
       heat: input.heat,
       reputation: input.reputation,
     }, givingTo, charas = [], users = [];
@@ -277,6 +287,12 @@ module.exports = {
       if (change.money) {
         embeds.push({
           description: `**${money(input.money, client)}** awarded!`,
+          color: color(client.config("default_color"))
+        })
+      }
+      if (change.points) {
+        embeds.push({
+          description: `**${(client.config("event_point_format").replace("{{POINTS}}", input.points) || input.points)}** awarded!`,
           color: color(client.config("default_color"))
         })
       }

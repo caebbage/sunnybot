@@ -9,176 +9,161 @@ module.exports = {
   slash: new SlashCommandBuilder()
     .setName('give')
     .setDescription(`Give something to...`)
-    .addSubcommand(subcommand => subcommand
-      .setName("money")
+    .addSubcommand(subcommand => subcommand.setName("money")
       .setDescription("Give money to a user.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user receiving the money.")
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("money")
+      .addIntegerOption(option => option.setName("money")
         .setDescription("The amount of Cred to receive.")
         .setMinValue(1)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("item")
+    .addSubcommand(subcommand => subcommand.setName("points")
+      .setDescription("Give event points to a user.")
+      .addUserOption(option => option.setName("user")
+        .setDescription("The user receiving the points.")
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option.setName("points")
+        .setDescription("The amount of points to receive.")
+        .setMinValue(1)
+        .setRequired(true)
+      )
+    )
+    .addSubcommand(subcommand => subcommand.setName("item")
       .setDescription("Give an item to a user.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user receiving the item.")
         .setRequired(true)
       )
-      .addStringOption(option => option
-        .setName("item")
+      .addStringOption(option => option.setName("item")
         .setDescription("The item to receive.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("item-amt")
+      .addIntegerOption(option => option.setName("item-amt")
         .setDescription("The number of items to receive.")
         .setMinValue(1)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("item-list")
+    .addSubcommand(subcommand => subcommand.setName("item-list")
       .setDescription("Give a list of items to a user.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user receiving the items.")
         .setRequired(true)
       )
-      .addStringOption(option => option
-        .setName("item-list")
+      .addStringOption(option => option.setName("item-list")
         .setDescription("A list of multiple items to receive. Format: Item 1 (x1) | Item 2 (x2)")
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("heat")
+    .addSubcommand(subcommand => subcommand.setName("heat")
       .setDescription("Give Heat to a character.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character gaining Heat.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("heat")
+      .addIntegerOption(option => option.setName("heat")
         .setDescription("The amount of Heat to give.")
         .setMinValue(1)
         .setMaxValue(5)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("reputation")
+    .addSubcommand(subcommand => subcommand.setName("reputation")
       .setDescription("Give Reputation to a character.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character gaining Reputation.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("rep")
+      .addIntegerOption(option => option.setName("rep")
         .setDescription("The amount of Reputation to give.")
         .setMinValue(1)
         .setMaxValue(9999)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("status")
+    .addSubcommand(subcommand => subcommand.setName("status")
       .setDescription("Give a Status to a character.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character gaining a status.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addStringOption(option => option
-        .setName("status")
+      .addStringOption(option => option.setName("status")
         .setDescription("The status to give.")
         .setAutocomplete(true)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("to-user")
+    .addSubcommand(subcommand => subcommand.setName("to-user")
       .setDescription("Give multiple things to a user at once.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user receiving things.")
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("money")
+      .addIntegerOption(option => option.setName("money")
         .setDescription("The amount of Money to give.")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item")
+      .addIntegerOption(option => option.setName("points")
+        .setDescription("The amount of points to receive.")
+        .setMinValue(1)
+      )
+      .addStringOption(option => option.setName("item")
         .setDescription("The item to receive.")
         .setAutocomplete(true)
       )
-      .addIntegerOption(option => option
-        .setName("item-amt")
+      .addIntegerOption(option => option.setName("item-amt")
         .setDescription("How much of an item to give. (Default 1)")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item-list")
+      .addStringOption(option => option.setName("item-list")
         .setDescription("A list of multiple items to receive. Format: Item 1 (x1) | Item 2 (x2)")
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("to-user-chara")
+    .addSubcommand(subcommand => subcommand.setName("to-user-chara")
       .setDescription("Give multiple things to a user and character at once.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character gaining things. (The user will be the owner of this character.)")
         .setAutocomplete(true)
         .setRequired(true)
       )
-
-      .addIntegerOption(option => option
-        .setName("money")
+      .addIntegerOption(option => option.setName("money")
         .setDescription("The amount of Money to give.")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item")
+      .addIntegerOption(option => option.setName("points")
+        .setDescription("The amount of points to receive.")
+        .setMinValue(1)
+      )
+      .addStringOption(option => option.setName("item")
         .setDescription("The item to receive.")
         .setAutocomplete(true)
       )
-      .addIntegerOption(option => option
-        .setName("item-amt")
+      .addIntegerOption(option => option.setName("item-amt")
         .setDescription("How much of an item to give. (Default 1)")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item-list")
+      .addStringOption(option => option.setName("item-list")
         .setDescription("A list of multiple items to receive. Format: Item 1 (x1) | Item 2 (x2)")
       )
-      .addIntegerOption(option => option
-        .setName("heat")
+      .addIntegerOption(option => option.setName("heat")
         .setDescription("The amount of Heat to give.")
         .setMinValue(1)
         .setMaxValue(5)
       )
-      .addIntegerOption(option => option
-        .setName("rep")
+      .addIntegerOption(option => option.setName("rep")
         .setDescription("The amount of Reputation to give.")
         .setMinValue(1)
         .setMaxValue(9999)
       )
-      .addStringOption(option => option
-        .setName("status")
+      .addStringOption(option => option.setName("status")
         .setDescription("The status to give.")
         .setAutocomplete(true)
       )
@@ -191,6 +176,7 @@ module.exports = {
       chara: interaction.options.getString("chara"),
 
       money: interaction.options.getInteger("money"),
+      points: interaction.options.getInteger("points"),
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
       itemList: interaction.options.getString("item-list"),
@@ -205,6 +191,7 @@ module.exports = {
     let target = {},
       change = {
         money: input.money,
+        points: input.points,
         heat: input.heat,
         reputation: input.reputation,
         statuses: input.status
@@ -221,7 +208,7 @@ module.exports = {
     } else if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
     try {
-      if (["money", "item", "item-list", "to-user"].includes(input.command)) {
+      if (["money", "points", "item", "item-list", "to-user"].includes(input.command)) {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
@@ -247,6 +234,12 @@ module.exports = {
           if (change.money) {
             embeds.push({
               description: `<@${profile.get("user_id")}> has gained **${money(input.money, client)}**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+          if (change.points) {
+            embeds.push({
+              description: `<@${profile.get("user_id")}> has gained **${(client.config("event_point_format").replace("{{POINTS}}", input.points) || input.points)}**!`,
               color: color(client.config("default_color"))
             })
           }

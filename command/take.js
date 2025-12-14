@@ -10,175 +10,161 @@ module.exports = {
   slash: new SlashCommandBuilder()
     .setName('take')
     .setDescription(`Take something from...`)
-    .addSubcommand(subcommand => subcommand
-      .setName("money")
+    .addSubcommand(subcommand => subcommand.setName("money")
       .setDescription("Take money from a user.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user losing the money.")
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("money")
+      .addIntegerOption(option => option.setName("money")
         .setDescription("The amount of Cred to take.")
         .setMinValue(1)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("item")
+    .addSubcommand(subcommand => subcommand.setName("points")
+      .setDescription("Take event points from a user.")
+      .addUserOption(option => option.setName("user")
+        .setDescription("The user losing the points.")
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option.setName("points")
+        .setDescription("The amount of points to take.")
+        .setMinValue(1)
+        .setRequired(true)
+      )
+    )
+    .addSubcommand(subcommand => subcommand.setName("item")
       .setDescription("Take an item from a user.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user losing the item.")
         .setRequired(true)
       )
-      .addStringOption(option => option
-        .setName("item")
+      .addStringOption(option => option.setName("item")
         .setDescription("The item to take.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("item-amt")
+      .addIntegerOption(option => option.setName("item-amt")
         .setDescription("The number of items to take.")
         .setMinValue(1)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("item-list")
+    .addSubcommand(subcommand => subcommand.setName("item-list")
       .setDescription("Take a list of items from a user.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user losing the items.")
         .setRequired(true)
       )
-      .addStringOption(option => option
-        .setName("item-list")
+      .addStringOption(option => option.setName("item-list")
         .setDescription("A list of multiple items to take. Format: Item 1 (x1) | Item 2 (x2)")
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("heat")
+    .addSubcommand(subcommand => subcommand.setName("heat")
       .setDescription("Take Heat from a character.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character losing Heat.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("heat")
+      .addIntegerOption(option => option.setName("heat")
         .setDescription("The amount of Heat to take.")
         .setMinValue(1)
         .setMaxValue(5)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("reputation")
+    .addSubcommand(subcommand => subcommand.setName("reputation")
       .setDescription("Give Reputation to a character.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character losing Reputation.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("rep")
+      .addIntegerOption(option => option.setName("rep")
         .setDescription("The amount of Reputation to take.")
         .setMinValue(1)
         .setMaxValue(9999)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("status")
+    .addSubcommand(subcommand => subcommand.setName("status")
       .setDescription("Take a Status from a character.")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character losing a status.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addStringOption(option => option
-        .setName("status")
+      .addStringOption(option => option.setName("status")
         .setDescription("The status to take.")
         .setAutocomplete(true)
         .setRequired(true)
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("from-user")
+    .addSubcommand(subcommand => subcommand.setName("from-user")
       .setDescription("Take multiple things from a user at once.")
-      .addUserOption(option => option
-        .setName("user")
+      .addUserOption(option => option.setName("user")
         .setDescription("The user losing things.")
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("money")
+      .addIntegerOption(option => option.setName("money")
         .setDescription("The amount of Money to take.")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item")
+      .addIntegerOption(option => option.setName("points")
+        .setDescription("The amount of points to take.")
+        .setMinValue(1)
+      )
+      .addStringOption(option => option.setName("item")
         .setDescription("The item to remove.")
         .setAutocomplete(true)
       )
-      .addIntegerOption(option => option
-        .setName("item-amt")
+      .addIntegerOption(option => option.setName("item-amt")
         .setDescription("How much of an item to take. (Default 1)")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item-list")
+      .addStringOption(option => option.setName("item-list")
         .setDescription("A list of multiple items to take. Format: Item 1 (x1) | Item 2 (x2)")
       )
     )
-    .addSubcommand(subcommand => subcommand
-      .setName("from-user-chara")
+    .addSubcommand(subcommand => subcommand.setName("from-user-chara")
       .setDescription("Take multiple things from a character at once. (The user will be the owner of this character.)")
-      .addStringOption(option => option
-        .setName("chara")
+      .addStringOption(option => option.setName("chara")
         .setDescription("The character losing things.")
         .setAutocomplete(true)
         .setRequired(true)
       )
-      .addIntegerOption(option => option
-        .setName("money")
+      .addIntegerOption(option => option.setName("money")
         .setDescription("The amount of Money to take.")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item")
+      .addIntegerOption(option => option.setName("points")
+        .setDescription("The amount of points to take.")
+        .setMinValue(1)
+      )
+      .addStringOption(option => option.setName("item")
         .setDescription("The item to remove.")
         .setAutocomplete(true)
       )
-      .addIntegerOption(option => option
-        .setName("item-amt")
+      .addIntegerOption(option => option.setName("item-amt")
         .setDescription("How much of an item to take. (Default 1)")
         .setMinValue(1)
       )
-      .addStringOption(option => option
-        .setName("item-list")
+      .addStringOption(option => option.setName("item-list")
         .setDescription("A list of multiple items to take. Format: Item 1 (x1) | Item 2 (x2)")
       )
-      .addIntegerOption(option => option
-        .setName("heat")
+      .addIntegerOption(option => option.setName("heat")
         .setDescription("The amount of Heat to lose.")
         .setMinValue(1)
         .setMaxValue(5)
       )
-      .addIntegerOption(option => option
-        .setName("rep")
+      .addIntegerOption(option => option.setName("rep")
         .setDescription("The amount of Reputation to lose.")
         .setMinValue(1)
         .setMaxValue(9999)
       )
-      .addStringOption(option => option
-        .setName("status")
+      .addStringOption(option => option.setName("status")
         .setDescription("The status to take.")
         .setAutocomplete(true)
       )
@@ -192,6 +178,7 @@ module.exports = {
       chara: interaction.options.getString("chara"),
 
       money: interaction.options.getInteger("money"),
+      points: interaction.options.getInteger("points"),
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
       itemList: interaction.options.getString("item-list"),
@@ -206,6 +193,7 @@ module.exports = {
     let target = {},
       change = {
         money: input.money,
+        points: input.points,
         heat: input.heat,
         reputation: input.reputation,
         statuses: input.status
@@ -222,7 +210,7 @@ module.exports = {
     } else if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
     try {
-      if (["money", "item", "item-list", "from-user"].includes(input.command)) {
+      if (["money", "points", "item", "item-list", "from-user"].includes(input.command)) {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
@@ -248,6 +236,12 @@ module.exports = {
           if (change.money) {
             embeds.push({
               description: `<@${profile.get("user_id")}> has lost **${money(input.money, client)}**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+          if (change.points) {
+            embeds.push({
+              description: `<@${profile.get("user_id")}> has lost **${(client.config("event_point_format").replace("{{POINTS}}", input.points) || input.points)}**!`,
               color: color(client.config("default_color"))
             })
           }

@@ -9,9 +9,9 @@ async function award(interaction, target, change, setting = {}) {
   let profile = target.profile, chara = target.chara;
 
   try {
-    if (!change.money && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
+    if (!change.money && !change.points && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
-    if ((change.money || change.items) && !profile) throw new Error("Profile not found.")
+    if ((change.money || change.points || change.items) && !profile) throw new Error("Profile not found.")
 
     if (change.money) {
       const oldVal = +profile.get("money") || 0,
@@ -19,6 +19,14 @@ async function award(interaction, target, change, setting = {}) {
 
       profile.set("money", newVal)
       log.push(`> **money:** +${change.money} (${oldVal} → ${newVal})`)
+    }
+    
+    if (change.points) {
+      const oldVal = +profile.get("points") || 0,
+        newVal = oldVal + change.points;
+
+      profile.set("points", newVal)
+      log.push(`> **points:** +${change.points} (${oldVal} → ${newVal})`)
     }
 
     if (change.items && !change.items.isEmpty()) {
@@ -90,7 +98,7 @@ async function award(interaction, target, change, setting = {}) {
     }
 
     if (!setting?.noReplyCheck && interaction.replied) throw new Error("Transaction already processed!")
-    if (change.money || change.items) await profile.save()
+    if (change.money || change.points || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {
@@ -114,17 +122,25 @@ async function deduct(interaction, target, change) {
   let profile = target.profile, chara = target.chara;
 
   try {
-    if (!change.money && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
+    if (!change.money && !change.points && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
-    if ((change.money || change.items) && !profile) throw new Error("Profile not found.")
+    if ((change.money || change.points || change.items) && !profile) throw new Error("Profile not found.")
 
     if (change.money) {
-      const oldVal = +profile.get("money"),
+      const oldVal = +profile.get("money") || 0,
         newVal = oldVal - change.money;
       if (newVal < 0) throw new Error(`Not enough money to take. (User has ${oldVal}.)`)
 
       profile.set("money", newVal)
       log.push(`> **money:** -${change.money} (${oldVal} → ${newVal})`)
+    }
+    
+    if (change.points) {
+      const oldVal = +profile.get("points") || 0,
+        newVal = oldVal - change.points;
+
+      profile.set("points", newVal)
+      log.push(`> **points:** -${change.points} (${oldVal} → ${newVal})`)
     }
 
     if (change.items && !change.items.isEmpty()) {
@@ -171,7 +187,7 @@ async function deduct(interaction, target, change) {
     }
 
     if (interaction.replied) throw new Error("Transaction already processed!")
-    if (change.money || change.items) await profile.save()
+    if (change.money || change.points || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {

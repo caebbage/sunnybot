@@ -295,7 +295,10 @@ function inventoryEmbed(inventory, client, category) {
 function userEmbed(profile, client) {
   return {
     title: client.config("decorative_symbol") + " " + profile.get("display_name").toUpperCase(),
-    description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0"),
+    description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0")
+    + (client.config("event_point_enabled")?.toUpperCase() == "TRUE"
+      ? `\n${client.config("event_point_emoji")} \` ${(client.config("event_point_name") || "points").toUpperCase()} ✦ \` ${profile.get("points") || 0}`
+      : ""),
     color: color(client.config("default_color")),
     footer: {
       text: "@" + client.users.resolve(profile.get("user_id"))?.username

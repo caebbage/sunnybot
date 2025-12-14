@@ -228,22 +228,7 @@ module.exports = {
         embeds.push(itemEmbed(item, client, true))
 
         if (item.get("use_text")) {
-          let text = item.get("use_text");
-          let repl = text.match(/\{\{.+?\}\}/g);
-
-          if (repl) {
-            repl.forEach(match => {
-            if (match.includes("RANGE")) {
-              let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
-              params.min = +(params.min)
-              params.max = +(params.max)
-              if (!params.min || !params.max) return
-              if (params.decimals) params.decimals = +params.decimals
-
-              text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
-            }
-          })
-          }
+          let text = rangeReplace(item.get("use_text"));
 
           embeds.push({
             description: text,
@@ -285,6 +270,7 @@ module.exports = {
 
           let res = {
             money: 0,
+            points: 0,
             items: new Inventory()
           },
             list = [],
@@ -292,8 +278,24 @@ module.exports = {
 
           const getGacha = {
             money(val) {
-              res.money += parseInt(val)
-              list.push(money(val, client) + "\n> Yay, money!")
+              let input = val.split("\n"),
+                amt = input.shift()
+              
+              res.money += parseInt(amt)
+              list.push(money(val, client) + "\n"
+                + (input.length
+                ? rangeReplace(input.join("\n"))
+                : "> Yay, money!"))
+            },
+            points(val) {
+              let input = val.split("\n"),
+                amt = input.shift()
+              
+              res.points += parseInt(amt)
+              list.push((client.config("event_point_format").replace("{{POINTS}}", amt) || amt)
+                + "\n" + (input.length
+                ? rangeReplace(input.join("\n"))
+                : "> Not bad!"))
             },
             item(val) {
               let gachaItem = db.items.find(row => row.get("item_name") == val)
@@ -322,22 +324,7 @@ module.exports = {
               }
             },
             other(val) {
-              let text = val;
-              let repl = text.match(/\{\{.+?\}\}/g);
-
-              if (repl) {
-                repl.forEach(match => {
-                  if (match.includes("RANGE")) {
-                    let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
-                    params.min = +(params.min)
-                    params.max = +(params.max)
-                    if (!params.min || !params.max) return
-                    if (params.decimals) params.decimals = +params.decimals
-
-                    text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0))
-                  }
-                })
-              }
+              let text = rangeReplace(val);
 
               list.push([text])
             }
@@ -360,12 +347,16 @@ module.exports = {
           for (let entry of update) {
             await entry.save()
           }
-
-          oldValue = profile.get("money");
+          
+          let old = {
+            money: +profile.get("money") || 0,
+            points: +profile.get("points") || 0
+          }
 
           if (input.source.replied) throw new Error("Transaction already processed!")
           await profile.assign({
-            money: +oldValue + res.money,
+            money: old.money + res.money,
+            points: old.points + res.points,
             inventory: inventory.toString(),
             perma_limit: perma.toString()
           })
@@ -384,7 +375,8 @@ module.exports = {
 
           await client.log(
             `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
-            + (res.money != 0 ? `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${oldValue} → ${profile.get("money")})\n` : "")
+            + (res.money != 0 ? `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${old.money} → ${old.money + res.money})\n` : "")
+            + (res.points != 0 ? `> **points:** ${res.points > 0 ? "+" : ""}${res.points} (${old.points} → ${old.points + res.points})\n` : "")
             + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : ""),
             { url: response.url }
           )
@@ -477,4 +469,24 @@ function drawGacha(pool) {
       return item
     } else rng -= +item.get("weight")
   }
+}
+
+function rangeReplace(t) {
+  let text = t;
+  let repl = text.match(/\{\{.+?\}\}/g);
+
+  if (repl) {
+    repl.forEach(match => {
+      if (match.includes("RANGE")) {
+        let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
+        params.min = +(params.min)
+        params.max = +(params.max)
+        if (!params.min || !params.max) return
+        if (params.decimals) params.decimals = +params.decimals
+
+        text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0).toFixed(params.decimals))
+      }
+    })
+  }
+  return text
 }

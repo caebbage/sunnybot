@@ -336,8 +336,10 @@ module.exports = {
 
             let pull = drawGacha(gacha);
 
-            if (pull.get("stock") !== "" && pull.get("stock") !== "0") {
+            if (pull.get("stock") && (isNaN(pull.get("stock")) && pull.get("stock") != "0")) {
               pull.set("stock", +pull.get("stock") - 1);
+              if (pull.get("rate")) pull.set("rate", "")
+              
               update.add(pull);
             }
 

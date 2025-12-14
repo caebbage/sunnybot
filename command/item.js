@@ -279,23 +279,32 @@ module.exports = {
           const getGacha = {
             money(val) {
               let input = val.split("\n"),
-                amt = input.shift()
-              
-              res.money += parseInt(amt)
-              list.push(money(val, client) + "\n"
-                + (input.length
-                ? rangeReplace(input.join("\n"))
-                : "> Yay, money!"))
+                amt = input.shift(),
+                congrats = (input.length
+                  ? rangeReplace(input.join("\n"))
+                  : "> Yay, money!");
+
+              res.money += parseInt(amt)              
+              if (congrats.indexOf("{{REWARD}}") > -1) {
+                list.push(congrats.replace(/{{REWARD}}/g, money(amt, client)))
+              } else {
+                list.push(money(val, client) + "\n" + congrats)
+              }
             },
             points(val) {
               let input = val.split("\n"),
-                amt = input.shift()
+                amt = input.shift(),
+                congrats = (input.length
+                  ? rangeReplace(input.join("\n"))
+                  : "> Not bad!"),
+                format = (client.config("event_point_format")?.replace("{{POINTS}}", amt) || `\`${amt} ${client.config("event_point_name")}\``);
               
               res.points += parseInt(amt)
-              list.push((client.config("event_point_format").replace("{{POINTS}}", amt) || amt)
-                + "\n" + (input.length
-                ? rangeReplace(input.join("\n"))
-                : "> Not bad!"))
+              if (congrats.indexOf("{{REWARD}}") > -1) {
+                list.push(congrats.replace(/{{REWARD}}/g, format))
+              } else {
+                list.push(format + "\n" + congrats)
+              }
             },
             item(val) {
               let gachaItem = db.items.find(row => row.get("item_name") == val)
@@ -336,7 +345,7 @@ module.exports = {
 
             let pull = drawGacha(gacha);
 
-            if (pull.get("stock") && (isNaN(pull.get("stock")) && pull.get("stock") != "0")) {
+            if (pull.get("stock") && (!isNaN(pull.get("stock")) && pull.get("stock") != "0")) {
               pull.set("stock", +pull.get("stock") - 1);
               if (pull.get("rate")) pull.set("rate", "")
               

@@ -456,6 +456,8 @@ function formatEmbed(src, format, parse = false) {
     } else {
       embed.description = val
     }
+    embed.description = rangeReplace(val)
+    
     if (embed.color && typeof embed.color == "string") embed.color = color(embed.color)
     return embed
   })
@@ -482,6 +484,26 @@ const removeEmpty = (obj) => {
   return newObj;
 };
 
+function rangeReplace(t) {
+  let text = t;
+  let repl = text.match(/\{\{.+?\}\}/g);
+
+  if (repl) {
+    repl.forEach(match => {
+      if (match.includes("RANGE")) {
+        let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
+        params.min = +(params.min)
+        params.max = +(params.max)
+        if (!params.min || !params.max) return
+        if (params.decimals) params.decimals = +params.decimals
+
+        text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0).toFixed(params.decimals))
+      }
+    })
+  }
+  return text
+}
+
 const toTitleCase = (str) => str.replace(/\w\S*/g, (text) => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase())
 
 module.exports = {
@@ -494,5 +516,6 @@ module.exports = {
   parseEmbed, formatEmbed,
   pad, arrayChunks, removeEmpty, color,
   randBetween, limit,
+  rangeReplace,
   styleText, toTitleCase
 }

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js'),
   fuzzy = require("fuzzy"),
-  { itemEmbed, color, money, diacritic, randBetween } = require("../module/helpers.js"),
+  { itemEmbed, color, money, diacritic, rangeReplace } = require("../module/helpers.js"),
   { Inventory } = require("../module/inventory.js");
 
 module.exports = {
@@ -480,24 +480,4 @@ function drawGacha(pool) {
       return item
     } else rng -= +item.get("weight")
   }
-}
-
-function rangeReplace(t) {
-  let text = t;
-  let repl = text.match(/\{\{.+?\}\}/g);
-
-  if (repl) {
-    repl.forEach(match => {
-      if (match.includes("RANGE")) {
-        let params = /RANGE: ?(?<min>-?[0-9.]+) TO (?<max>-?[0-9.]+)(?: ROUNDTO (?<decimals>\d+))?/i.exec(match)?.groups;
-        params.min = +(params.min)
-        params.max = +(params.max)
-        if (!params.min || !params.max) return
-        if (params.decimals) params.decimals = +params.decimals
-
-        text = text.replace(match, randBetween(params.min, params.max, params.decimals || 0).toFixed(params.decimals))
-      }
-    })
-  }
-  return text
 }

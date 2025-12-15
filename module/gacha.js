@@ -1,5 +1,5 @@
 
-const { formatEmbed, color, parseEmbed, arrayChunks } = require("../module/helpers.js")
+const { formatEmbed, color, parseEmbed, arrayChunks, rangeReplace } = require("../module/helpers.js")
 const { PermissionsBitField } = require("discord.js")
 
 function drawPool(pool, amt = 1) {
@@ -112,7 +112,7 @@ async function pullPool(message, name, customCmd, override) {
           })
         }
 
-        return res
+        return rangeReplace(res)
       }),
       output.embeds[0], options.embedFormat)
     

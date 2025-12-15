@@ -456,8 +456,7 @@ function formatEmbed(src, format, parse = false) {
     } else {
       embed.description = val
     }
-    embed.description = rangeReplace(val)
-    
+        
     if (embed.color && typeof embed.color == "string") embed.color = color(embed.color)
     return embed
   })

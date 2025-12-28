@@ -96,9 +96,9 @@ async function pullPool(message, name, customCmd, override) {
     output.embeds = formatEmbed(
       drawPool(validResults, times).map(pull => {
         let res = pull.value.replace(/{{@USER}}/gi, `<@${message.author.id}>`)
-        res = pull.value.replace(/{{INPUT}}/gi, subcommand)
+        res = res.replace(/{{INPUT}}/gi, subcommand)
 
-        let fields = pull.value.match(/{{.*?}}/g);
+        let fields = res.match(/{{.*?}}/g);
 
         if (fields?.length) {
           let replacements = fields.map(field => {

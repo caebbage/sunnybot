@@ -149,7 +149,8 @@ module.exports = {
             hold: parseInt(item.get("hold_limit")) || null,
             daily: parseInt(item.get("daily_limit")) || null,
             monthly: parseInt(item.get("monthly_limit")) || null,
-            perma: parseInt(item.get("perma_limit")) || null
+            perma: parseInt(item.get("perma_limit")) || null,
+            text: []
           },
           daily = new Inventory(profile.get("daily_limit")),
           monthly = new Inventory(profile.get("monthly_limit")),
@@ -177,15 +178,28 @@ module.exports = {
 
         profile.set("money", moneyChange.new)
         profile.set("inventory", inventory.giveItem(name, amount).toString())
-        if (limit.daily) profile.set("daily_limit", daily.giveItem(name, amount).toString())
-        if (limit.monthly) profile.set("monthly_limit", monthly.giveItem(name, amount).toString())
-        if (limit.perma) profile.set("perma_limit", perma.giveItem(name, amount).toString())
+
+        if (limit.daily) {
+          profile.set("daily_limit", daily.giveItem(name, amount).toString())
+          limit.text.push(`You may buy ${limit.daily - daily.get(name)} more today.`)
+        }
+        if (limit.monthly) {
+          profile.set("monthly_limit", monthly.giveItem(name, amount).toString())
+          limit.text.push(`You may buy ${limit.monthly - monthly.get(name)} more this month.`)
+        }
+        if (limit.perma) {
+          profile.set("perma_limit", perma.giveItem(name, amount).toString())
+          limit.text.push(`You may buy ${limit.perma - perma.get(name)} more in your lifetime.`)
+        }
 
         if (input.source.replied) throw new Error("Transaction already processed!")
         await profile.save()
 
+
+
         let response = (await input.source.reply({
-          content: `Bought **${name} (x${amount}) for ${money(moneyChange.deduct, client)}**!`,
+          content: `Bought **${name} (x${amount}) for ${money(moneyChange.deduct, client)}**!`
+          + (limit.text.length ? "\n" + limit.text.map(x => `-# ${x}`).join("\n") : ""),
           embeds: [itemEmbed(item, client, true)],
           withResponse: true
         }))?.resource?.message
@@ -204,16 +218,17 @@ module.exports = {
 
         if (!item) throw new Error("The specified item could not be found!")
 
-        if (item.get("protected")?.toUpperCase() === "TRUE") throw new Error("This item is unusable; ping mods if you'd like to toss it!")
+        if (item.get("use_cap") === "0") throw new Error("This item is unusable; ping mods if you'd like to toss it!")
 
         await db.users.reload()
         let profile = db.users.find(row => row.get("user_id") == input.user)
         if (!profile) throw new Error("Your user profile could not be found!")
 
         const name = input.item,
-          amount = input.amount ?? 1;
+          amount = input.amount ?? 1,
+          cap = +item.get("use_cap") || 10;
 
-        if (item.get("use_cap") && amount > +item.get("use_cap") || amount > 10) throw new Error(`You may only use ${item.get("use_cap" || 10)} ${input.item} at a time!`)
+        if (amount > cap) throw new Error(`You may only use ${item.get("use_cap") || 10} ${input.item} at a time!`)
 
         const inventory = new Inventory(profile.get("inventory")),
           perma = new Inventory(profile.get("perma_limit"));
@@ -450,7 +465,7 @@ module.exports = {
         let profile = db.users.find(row => row.get("user_id") == interaction.user.id),
           inventory = new Inventory(profile?.get("inventory"));
 
-        let data = db.items.data.filter(x => x.get("item_name") && x.get("protected")?.toUpperCase() !== "TRUE")
+        let data = db.items.data.filter(x => x.get("item_name") && x.get("use_cap") !== "0")
         if (profile) data = data.filter(item => inventory.hasItem(item.get("item_name")))
 
         let filtered = fuzzy.filter(diacritic(focused.value), data, { extract: x => diacritic(x.get("item_name")) })

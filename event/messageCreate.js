@@ -5,6 +5,7 @@ module.exports = {
   name: Events.MessageCreate,
   async execute(message) {
     try {
+
       const PREFIX = process.env.PREFIX;
 
       if (message.content.indexOf(PREFIX) !== 0) return
@@ -23,6 +24,7 @@ module.exports = {
       const action = message.client.slash[actionName]
 
       if (action) {
+        if (message.client.config("builtin_prefix_enabled") === "FALSE") return;
         try {
           await await message.client.commands.get(action).parse(undefined, message, message.content.slice(PREFIX.length + actionName.length).trim())
         } catch (error) {
@@ -32,6 +34,7 @@ module.exports = {
         const customCmd = await message.client.db.actions.get(actionName);
 
         if (!customCmd) return
+        if (message.client.config("custom_prefix_enabled") === "FALSE") return;
 
         let [output, deleteInput] = await pullPool(message, actionName, customCmd);
        

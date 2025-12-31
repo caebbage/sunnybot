@@ -357,8 +357,9 @@ function itemEmbed(item, client, simple = false) {
       if (item.get("perma_limit")) limit.push(`${item.get("perma_limit")} per lifetime`)
 
       let text = (warn.length ? warn.join(", ") + ". " : "") + "limit " + limit.join(", ")
-      if (text === "limit ") return
-      else return { text }
+      text = text.replace(/limit $/m, "")
+      if (text) return { text }
+      return
     })()
   }
 }

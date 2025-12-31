@@ -171,7 +171,7 @@ function hexBonus(bonuses, faction) {
   let res = `[2;37mBonuses gained from [1;${faction.get("ansi_color")}m${bonuses.length}[0m[2;37m hexes:[0m`
 
   if (!total.hot && !total.cool && !total.hard && !total.sharp && !total.other?.length) {
-    res += `\n[2;37m  ‣[2;30m No bonuses... yet![0m`;    
+    res += `\n[2;37m  ‣[2;30m No bonuses... yet![0m`;
     return res
   }
 
@@ -237,31 +237,36 @@ function hexEmbed(hex, client) {
 }
 
 function statusMods(statuses) {
-  let res = "";
+  let types = new Map(
+    [...new Set(statuses.map(x => x.original.get("type")))].map(type => [type, statuses.filter(x => x.original.get("type") == type)])
+  )
 
-  statuses.forEach(status => {
-    let color = status.original.get("color"), ansi,
-      hasMods = !!(status.hot || status.cool || status.hard || status.sharp || status.other?.length);;
+  return [...types.values()].map(s => {
+    let names = s.map(x => `[2;37m【 [1;${ansi(x.original.get("color"))}m${x.original.get("status_name").toUpperCase()}[2;37m 】[0m`),
+      total = sumBonus(s),
+      hasMods = !!(total.hot || total.cool || total.hard || total.sharp || total.other?.size);
 
-    switch (color) {
-      case "red": ansi = 31; break;
-      case "yellow": ansi = 33; break;
-      case "green": ansi = 36; break;
-      case "blue": ansi = 34; break;
-      case "pink": ansi = 35; break;
-      default: ansi = 37; break;
-    }
+    return names.join("\n")
+      + (hasMods
+        ? statNames.map(stat => (
+          total[stat]
+            ? `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} ${total[stat] >= 0 ? "+" : ""}${total[stat]} ❱[0m`
+            : undefined
+          )).filter(x => x).join("")
+        : "")
+  }).join("\n\n")?.trim() || ""
+}
 
-    res += `\n[2;37m【 [1;${ansi}m${status.name.toUpperCase()}[2;37m 】${hasMods ? ":" : ""}[0m`
-
-    statNames.forEach(stat => {
-      if (status[stat]) res += `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} ${status[stat] >= 0 ? "+" : ""}${status[stat]} ❱[0m`;
-    })
-
-    res += "\n" + status.other.map(x => `[2;37m  ‣[2;30m ${x}[0m`).join("\n");
-  })
-
-  return res?.trim()
+function ansi(color) {
+  switch (color) {
+    case "red": return 31;
+    case "yellow": return 33;
+    case "lime": return 32;
+    case "green": return 36;
+    case "blue": return 34;
+    case "pink": return 35;
+    default: return 37;
+  }
 }
 
 function hexList(client, faction) {
@@ -281,7 +286,7 @@ function hexList(client, faction) {
 
       if (hex.get("hot") || hex.get("cool") || hex.get("hard") || hex.get("sharp") || hex.get("misc_bonus"))
         result += "\n[2;37m  ‣ [2;30m";
-      
+
       let stats = [];
       if (hex.get("hot")) stats.push("HOT +" + hex.get("hot"))
       if (hex.get("cool")) stats.push("COOL +" + hex.get("cool"))
@@ -458,7 +463,7 @@ function formatEmbed(src, format, parse = false) {
     } else {
       embed.description = val
     }
-        
+
     if (embed.color && typeof embed.color == "string") embed.color = color(embed.color)
     return embed
   })

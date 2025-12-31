@@ -347,13 +347,14 @@ function itemEmbed(item, client, simple = false) {
     },
     footer: (item.get("hold_limit") || item.get("monthly_limit") || item.get("perma_limit") ? (() => {
       let limit = []
+      if (item.get("untradeable") === "TRUE") limit.push("untradeable")
       if (item.get("use_cap")) limit.push(item.get("use_cap") === "0" ? "unusable" : `${item.get("use_cap")} usable at once`)
       if (item.get("hold_limit")) limit.push(`${item.get("hold_limit")} held at once`)
       if (item.get("daily_limit")) limit.push(`${item.get("daily_limit")} per day`)
       if (item.get("monthly_limit")) limit.push(`${item.get("monthly_limit")} per month`)
       if (item.get("perma_limit")) limit.push(`${item.get("perma_limit")} per lifetime`)
 
-      return { text: "limit " + limit.join(", ") }
+      return { text: "limit " + limit.join(". ") }
     })() : undefined)
   }
 }

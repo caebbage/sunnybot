@@ -244,7 +244,7 @@ function statusMods(statuses) {
   return [...types.values()].map(s => {
     let names = s.map(x => `[2;37m【 [1;${ansi(x.original.get("color"))}m${x.original.get("status_name").toUpperCase()}[2;37m 】[0m`),
       total = sumBonus(s),
-      hasMods = !!(total.hot || total.cool || total.hard || total.sharp || total.other?.size);
+      hasMods = !!(total.hot || total.cool || total.hard || total.sharp || total.other.size);
 
     return names.join("\n")
       + (hasMods
@@ -253,6 +253,9 @@ function statusMods(statuses) {
             ? `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} ${total[stat] >= 0 ? "+" : ""}${total[stat]} ❱[0m`
             : undefined
           )).filter(x => x).join("")
+          + total.other.size
+            ? [...total.other.entries()].map(([k, n]) => `\n[2;37m  ‣[2;30m ${k}${n > 1 ? ` (x${n})` : ""}[0m`).join("")
+            : ""
         : "")
   }).join("\n\n")?.trim() || ""
 }

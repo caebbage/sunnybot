@@ -205,7 +205,7 @@ module.exports = {
         }
         else if (input.command == "group") {
           charas.push(...db.charas.filter(char => char.get("reward_group") == input.group))
-          givingTo = `our ${input.group} of the night`
+          givingTo = input.group
         }
 
         if (!input.includeNpcs && input.command != "group") charas = charas.filter(char => char.get("is_npc") != "TRUE")

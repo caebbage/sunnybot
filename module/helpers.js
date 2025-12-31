@@ -35,6 +35,7 @@ function charaEmbed(chara, client) {
       `\`${chara.get("pronouns")}\``,
       `\`${chara.get("height")}\``
     ].join(" ✦ ")
+      + (chara.get("tags") ? " ✦ " + chara.get("tags") : "")
 
       + `\n\n> **ⓘ STATUS** ➜ \`${chara.get("status").toUpperCase()}\``
       + (chara.get("flavor_text")

@@ -252,7 +252,7 @@ module.exports = {
         }
 
         if (item.get("track_use")) {
-          client.sheets.config.item.sheetsById[client.config(`uselog_sheet`)].addRow({
+          client.sheets.config.master.sheetsById[client.config(`uselog_sheet`)].addRow({
             date: (new Date()).toString(),
             user_id: input.user,
             username: client.users.resolve(input.user)?.username || "N/A",
@@ -409,7 +409,8 @@ module.exports = {
         }
 
         return await input.source.editReply({
-          content: `**${name} (x${amount})** used!`,
+          content: `**${name} (x${amount})** used!`
+          + `\n-# You have ${inventory.get(name) || 0} remaining in your inventory.`,
           embeds
         })
       }

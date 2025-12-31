@@ -253,9 +253,9 @@ function statusMods(statuses) {
             ? `\n[2;37m  ‣[2;30m ❰ ${stat.toUpperCase()} ${total[stat] >= 0 ? "+" : ""}${total[stat]} ❱[0m`
             : undefined
           )).filter(x => x).join("")
-          + total.other.size
+          + (total.other.size
             ? [...total.other.entries()].map(([k, n]) => `\n[2;37m  ‣[2;30m ${k}${n > 1 ? ` (x${n})` : ""}[0m`).join("")
-            : ""
+            : "")
         : "")
   }).join("\n\n")?.trim() || ""
 }

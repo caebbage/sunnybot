@@ -31,7 +31,7 @@ function charaEmbed(chara, client) {
     url: chara.get("app"),
     description: "-# " + [
       chara.get("rank").replace(/^(.+) (.+)$/, "$1 `$2`") +
-      ` of the \`${chara.get("family")?.toUpperCase() || "???"}\` Family`,
+      (chara.get("faction") != "unaffiliated" ? ` of the \`${chara.get("family")?.toUpperCase() || "???"}\` Family` : ""),
       `\`${chara.get("pronouns")}\``,
       `\`${chara.get("height")}\``
     ].join(" ✦ ")
@@ -116,6 +116,8 @@ function factionEmbed(faction, client) {
 }
 
 function factionBonus(faction) {
+  if (faction.get("faction_name") == "unaffiliated") return `[2;37m【 [1;${faction.get("ansi_color")}mUNAFFILIATED [0m[2;37m】[0m `
+  
   let res = `[2;37m【 [1;${faction.get("ansi_color")}m${faction.get("faction_name").toUpperCase()} ${faction.get("simple_emoji")} [0m[2;37mTier ${faction.get("tier").toUpperCase()} 】:[0m `;
 
   statNames.forEach(stat => {

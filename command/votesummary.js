@@ -92,7 +92,7 @@ module.exports = {
             `\n> \` GENERAL ${client.config("decorative_symbol")} \` <t:${Math.floor(dl.vote.getTime() / 1000)}:f> (<t:${Math.floor(dl.vote.getTime() / 1000)}:R>)`,
           color: color(client.config("default_color")),
           fields: [...factions.values()].map(fac => {
-            fac.value = fac.value.sort((a, b) => a[2] - b[2]).map(x => `${x[0]} ${x[1]} (${x[2]})`).join("\n")
+            fac.value = fac.value.sort((a, b) => b[2] - a[2]).map(x => `${x[0]} ${x[1]} (${x[2]})`).join("\n")
             if (!fac.value) fac.value = "-# None yet..."
             return fac
           }),

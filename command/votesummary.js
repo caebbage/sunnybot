@@ -79,8 +79,8 @@ module.exports = {
           triad = votes.filter(v => v.get("chara").get("faction") === "triad").length,
           owner = hex.get("controlled_by")
 
-        if (cartel) factions.get("cartel").value.push([(owner == "unoccupied" ? "🚩" : owner == "cartel" ? "🛡️" : "⚔️"), hex.get("hex_id"), cartel])
-        if (triad) factions.get("triad").value.push([(owner == "unoccupied" ? "🚩" : owner == "triad" ? "🛡️" : "⚔️"), hex.get("hex_id"), triad])
+        if (cartel) factions.get("cartel").value.push([(owner == "cartel" ? "🛡️" : "⚔️"), hex.get("hex_id"), cartel])
+        if (triad) factions.get("triad").value.push([(owner == "triad" ? "🛡️" : "⚔️"), hex.get("hex_id"), triad])
       })
 
       return await input.source.editReply({

@@ -67,16 +67,21 @@ module.exports = {
       )
 
       allVotes.forEach(vote => {
-        vote.set("chara", db.charas.find(char =>
-          char.get("owner_id") === vote.get("user_id")
-          && char.get("is_npc") !== "TRUE"
-        ))
+        let member = input.source.guild.members.resolve(vote.get("user_id")),
+         faction;
+
+        if (member.roles.cache.get(client.config("cartel_role"))) faction = "cartel";
+        else if (member.roles.cache.get(client.config("triad_role"))) faction = "triad";
+
+        vote.set("faction", faction)
       })
+
+      console.log(allVotes)
 
       hexes.forEach(hex => {
         let votes = allVotes.filter(x => x.get("voted") == hex.get("hex_id")),
-          cartel = votes.filter(v => v.get("chara").get("faction") === "cartel").length,
-          triad = votes.filter(v => v.get("chara").get("faction") === "triad").length,
+          cartel = votes.filter(v => v.get("faction") === "cartel").length,
+          triad = votes.filter(v => v.get("faction") === "triad").length,
           owner = hex.get("controlled_by")
 
         if (cartel) factions.get("cartel").value.push([(owner == "cartel" ? "🛡️" : "⚔️"), hex.get("hex_id"), cartel])

@@ -75,9 +75,7 @@ module.exports = {
 
         vote.set("faction", faction)
       })
-
-      console.log(allVotes)
-
+      
       hexes.forEach(hex => {
         let votes = allVotes.filter(x => x.get("voted") == hex.get("hex_id")),
           cartel = votes.filter(v => v.get("faction") === "cartel").length,

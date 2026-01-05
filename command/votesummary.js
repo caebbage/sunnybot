@@ -33,8 +33,8 @@ module.exports = {
 
       const map = (await client.db.actions.get("mapimage"))
         ?.map(row => row.toObject())
-          .filter(row => row.weight && !isNaN(row.weight) && row.value).map(x => x.value)?.[0]
-          .match(/https:.+/)?.[0]
+        .filter(row => row.weight && !isNaN(row.weight) && row.value).map(x => x.value)?.[0]
+        .match(/https:.+/)?.[0]
         || undefined;
 
       if (!allVotes.length) {
@@ -83,6 +83,18 @@ module.exports = {
         if (triad) factions.get("triad").value.push([(owner == "triad" ? "🛡️" : "⚔️"), hex.get("hex_id"), triad])
       })
 
+      const fields = [...factions.values()].map(fac => {
+        fac.value = fac.value.sort((a, b) => b[2] - a[2]).map(x => `${x[0]} ${x[1]} (${x[2]})`).join("\n")
+        if (!fac.value) fac.value = "-# None yet..."
+        return fac
+      })
+
+      if (client.config("city_hex_votes")) fields.push({
+        name: `${client.config("city_emoji")} \`CITY\``,
+        value: client.config("city_hex_votes"),
+        inline: true
+      })
+
       return await input.source.editReply({
         embeds: [{
           title: "✦ `VOTE SUMMARY`",
@@ -91,11 +103,7 @@ module.exports = {
             `\n> \`  ATTACK ${client.config("decorative_symbol")} \` <t:${Math.floor(dl.atk.getTime() / 1000)}:f> (<t:${Math.floor(dl.atk.getTime() / 1000)}:R>)` +
             `\n> \` GENERAL ${client.config("decorative_symbol")} \` <t:${Math.floor(dl.vote.getTime() / 1000)}:f> (<t:${Math.floor(dl.vote.getTime() / 1000)}:R>)`,
           color: color(client.config("default_color")),
-          fields: [...factions.values()].map(fac => {
-            fac.value = fac.value.sort((a, b) => b[2] - a[2]).map(x => `${x[0]} ${x[1]} (${x[2]})`).join("\n")
-            if (!fac.value) fac.value = "-# None yet..."
-            return fac
-          }),
+          fields,
           image: { url: map },
           thumbnail: { url: client.config("default_image") }
         }]

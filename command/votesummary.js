@@ -37,21 +37,6 @@ module.exports = {
         .match(/https:.+/)?.[0]
         || undefined;
 
-      if (!allVotes.length) {
-        return await input.source.editReply({
-          embeds: [{
-            title: "✦ `VOTE SUMMARY`",
-            description: "**` VOTE DEADLINES `**" +
-              `\n> \`  ATTACK ${client.config("decorative_symbol")} \` <t:${Math.floor(dl.atk.getTime() / 1000)}:f> (<t:${Math.floor(dl.atk.getTime() / 1000)}:R>)` +
-              `\n> \` GENERAL ${client.config("decorative_symbol")} \` <t:${Math.floor(dl.vote.getTime() / 1000)}:f> (<t:${Math.floor(dl.vote.getTime() / 1000)}:R>)` +
-              "\n-# No votes have been cast yet!",
-            color: color(client.config("default_color")),
-            image: { url: map },
-            thumbnail: { url: client.config("default_image") }
-          }]
-        })
-      }
-
       let votedHexes = [... new Set(allVotes.map(x => x.get("voted")))]
 
       await db.hexes.reload()
@@ -68,14 +53,14 @@ module.exports = {
 
       allVotes.forEach(vote => {
         let member = input.source.guild.members.resolve(vote.get("user_id")),
-         faction;
+          faction;
 
         if (member.roles.cache.get(client.config("cartel_role"))) faction = "cartel";
         else if (member.roles.cache.get(client.config("triad_role"))) faction = "triad";
 
         vote.set("faction", faction)
       })
-      
+
       hexes.forEach(hex => {
         let votes = allVotes.filter(x => x.get("voted") == hex.get("hex_id")),
           cartel = votes.filter(v => v.get("faction") === "cartel").length,

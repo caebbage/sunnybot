@@ -182,7 +182,7 @@ module.exports = {
 
       if (focused.value.length <= 1) await db.charas.reload()
 
-      let data = db.charas.sort((a, b) => a.get("last_first_name").localeCompare(b.get("last_first_name")));
+      let data = db.charas.filter(row => row.get("chara_name")).sort((a, b) => a.get("last_first_name").localeCompare(b.get("last_first_name")));
       data = [...data.filter(row => row.get("is_npc")?.toUpperCase() !== "TRUE"), ...data.filter(row => row.get("is_npc")?.toUpperCase() === "TRUE")]
 
       if (focused.name === "chara") {

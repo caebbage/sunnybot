@@ -230,7 +230,7 @@ function hexEmbed(hex, client) {
     url: hex.get("link"),
     description:
       "` CONTROLLED BY ` " + (faction ? "The " + toTitleCase(faction.get("faction_name")) : hex.get("controlled_by"))
-      + ("\n`   HOLD ` " + (hex.get("hold") || "0") + ((hex.get("is_base") == "TRUE") ? ` ${client.config("decorative_symbol")} base estabished` : ""))
+      + ("\n`   HOLD ` " + (hex.get("hold") || "0") + ((hex.get("is_base") == "TRUE") ? ` ${client.config("decorative_symbol")} base established` : ""))
       + (hex.get("description") ? "\n" + hex.get("description")?.split("\n").map(x => `> ${x}`).join("\n") : "")
       + (res ? "\n```ansi\n" + colorStats(res, false) + "```" : ""),
     color: color(faction?.get("main_color") || client.config("default_color")),

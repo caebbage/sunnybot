@@ -58,7 +58,7 @@ module.exports = async (client) => {
         await this.sheet?.loadHeaderRow()
 
         this.data = await this.sheet?.getRows({
-          limit: 500
+          limit: 1000
         }) ?? this.data()
       },
       data: [],

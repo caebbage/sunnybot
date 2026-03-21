@@ -9,9 +9,9 @@ async function award(interaction, target, change, setting = {}) {
   let profile = target.profile, chara = target.chara;
 
   try {
-    if (!change.money && !change.points && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
+    if (!change.money && !change.points && !change.items && !change.chips && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
-    if ((change.money || change.points || change.items) && !profile) throw new Error("Profile not found.")
+    if ((change.money || change.points || change.chips || change.items) && !profile) throw new Error("Profile not found.")
 
     if (change.money) {
       const oldVal = +profile.get("money") || 0,
@@ -20,13 +20,21 @@ async function award(interaction, target, change, setting = {}) {
       profile.set("money", newVal)
       log.push(`> **money:** +${change.money} (${oldVal} → ${newVal})`)
     }
-    
+
     if (change.points) {
       const oldVal = +profile.get("points") || 0,
         newVal = oldVal + change.points;
 
       profile.set("points", newVal)
       log.push(`> **points:** +${change.points} (${oldVal} → ${newVal})`)
+    }
+
+    if (change.chips) {
+      const oldVal = +profile.get("chips") || 0,
+        newVal = oldVal + change.chips;
+
+      profile.set("chips", newVal)
+      log.push(`> **chips:** +${change.chips} (${oldVal} → ${newVal})`)
     }
 
     if (change.items && !change.items.isEmpty()) {
@@ -63,7 +71,7 @@ async function award(interaction, target, change, setting = {}) {
       const oldVal = +chara.get("heat") || 0;
       let newVal;
       if (setting?.toCap) {
-        newVal = limit(oldVal + change.heat, 0, 5); 
+        newVal = limit(oldVal + change.heat, 0, 5);
       } else {
         newVal = oldVal + change.heat;
         if (newVal > 5) throw new Error(`Transaction would exceed Heat cap of 5.`)
@@ -98,7 +106,7 @@ async function award(interaction, target, change, setting = {}) {
     }
 
     if (!setting?.noReplyCheck && interaction.replied) throw new Error("Transaction already processed!")
-    if (change.money || change.points || change.items) await profile.save()
+    if (change.money || change.points || change.chips || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {
@@ -122,9 +130,9 @@ async function deduct(interaction, target, change) {
   let profile = target.profile, chara = target.chara;
 
   try {
-    if (!change.money && !change.points && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
+    if (!change.money && !change.points && !change.chips && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
-    if ((change.money || change.points || change.items) && !profile) throw new Error("Profile not found.")
+    if ((change.money || change.points || change.chips || change.items) && !profile) throw new Error("Profile not found.")
 
     if (change.money) {
       const oldVal = +profile.get("money") || 0,
@@ -134,13 +142,21 @@ async function deduct(interaction, target, change) {
       profile.set("money", newVal)
       log.push(`> **money:** -${change.money} (${oldVal} → ${newVal})`)
     }
-    
+
     if (change.points) {
       const oldVal = +profile.get("points") || 0,
         newVal = oldVal - change.points;
 
       profile.set("points", newVal)
       log.push(`> **points:** -${change.points} (${oldVal} → ${newVal})`)
+    }
+
+    if (change.chips) {
+      const oldVal = +profile.get("chips") || 0,
+        newVal = oldVal - change.chips;
+
+      profile.set("chips", newVal)
+      log.push(`> **chips:** -${change.chips} (${oldVal} → ${newVal})`)
     }
 
     if (change.items && !change.items.isEmpty()) {
@@ -187,7 +203,7 @@ async function deduct(interaction, target, change) {
     }
 
     if (interaction.replied) throw new Error("Transaction already processed!")
-    if (change.money || change.points || change.items) await profile.save()
+    if (change.money || change.points || change.chips || change.items) await profile.save()
     if (change.heat || change.reputation || change.statuses) await chara.save()
 
     return {

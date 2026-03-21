@@ -298,6 +298,9 @@ function userEmbed(profile, client) {
     description: "💵 ` CRED ✦ ` " + (profile.get("money") || "0")
     + (client.config("event_point_enabled")?.toUpperCase() == "TRUE"
       ? `\n${client.config("event_point_emoji")} \` ${(client.config("event_point_name") || "points").toUpperCase()} ✦ \` ${profile.get("points") || 0}`
+      : "")
+    + (client.config("casino_chips_enabled")?.toUpperCase() == "TRUE"
+      ? `\n${client.config("casino_chips_emoji")} \` CHIPS ✦ \` ${profile.get("chips") || 0}`
       : ""),
     color: color(client.config("default_color")),
     footer: {

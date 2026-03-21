@@ -75,7 +75,7 @@ module.exports = async (client) => {
   }
 
   client.resetData = async function () {
-    for (let sheet of ["users", "charas", "factions", "hexes", "items", "tasks", "work", "crime", "reactroles", "statuses"]) {
+    for (let sheet of ["users", "charas", "factions", "hexes", "items", "tasks", "work", "crime", "reactroles", "statuses", "casino"]) {
       let type = "master"
 
       if (["users", "charas"].includes(sheet)) type = "user"

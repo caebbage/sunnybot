@@ -33,6 +33,18 @@ module.exports = {
         .setRequired(true)
       )
     )
+    .addSubcommand(subcommand => subcommand.setName("chips")
+      .setDescription("Give casino chips to a user.")
+      .addUserOption(option => option.setName("user")
+        .setDescription("The user receiving the chips.")
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option.setName("chips")
+        .setDescription("The amount of chips to receive.")
+        .setMinValue(1)
+        .setRequired(true)
+      )
+    )
     .addSubcommand(subcommand => subcommand.setName("item")
       .setDescription("Give an item to a user.")
       .addUserOption(option => option.setName("user")
@@ -115,6 +127,10 @@ module.exports = {
         .setDescription("The amount of points to receive.")
         .setMinValue(1)
       )
+      .addIntegerOption(option => option.setName("chips")
+        .setDescription("The amount of chips to receive.")
+        .setMinValue(1)
+      )
       .addStringOption(option => option.setName("item")
         .setDescription("The item to receive.")
         .setAutocomplete(true)
@@ -140,6 +156,10 @@ module.exports = {
       )
       .addIntegerOption(option => option.setName("points")
         .setDescription("The amount of points to receive.")
+        .setMinValue(1)
+      )
+      .addIntegerOption(option => option.setName("chips")
+        .setDescription("The amount of chips to receive.")
         .setMinValue(1)
       )
       .addStringOption(option => option.setName("item")
@@ -177,6 +197,8 @@ module.exports = {
 
       money: interaction.options.getInteger("money"),
       points: interaction.options.getInteger("points"),
+      chips: interaction.options.getInteger("chips"),
+
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
       itemList: interaction.options.getString("item-list"),
@@ -192,6 +214,8 @@ module.exports = {
       change = {
         money: input.money,
         points: input.points,
+        chips: input.chips,
+
         heat: input.heat,
         reputation: input.reputation,
         statuses: input.status
@@ -208,7 +232,7 @@ module.exports = {
     } else if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
     try {
-      if (["money", "points", "item", "item-list", "to-user"].includes(input.command)) {
+      if (["money", "points", "chips", "item", "item-list", "to-user"].includes(input.command)) {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
@@ -239,10 +263,17 @@ module.exports = {
           }
           if (change.points) {
             embeds.push({
-              description: `<@${profile.get("user_id")}> has gained **${(client.config("event_point_format").replace("{{POINTS}}", input.points) || input.points)}**!`,
+              description: `<@${profile.get("user_id")}> has gained **${(client.config("event_point_format")?.replace("{{POINTS}}", input.points) || input.points)}**!`,
               color: color(client.config("default_color"))
             })
           }
+          if (change.chips) {
+            embeds.push({
+              description: `<@${profile.get("user_id")}> has gained **${(client.config("casino_chips_format")?.replace("{{CHIPS}}", input.chips) || input.chips)}**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+
           if (change.items) {
             let items = change.items.entries();
 

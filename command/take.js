@@ -34,6 +34,18 @@ module.exports = {
         .setRequired(true)
       )
     )
+    .addSubcommand(subcommand => subcommand.setName("chips")
+      .setDescription("Give casino chips to a user.")
+      .addUserOption(option => option.setName("user")
+        .setDescription("The user losing the chips.")
+        .setRequired(true)
+      )
+      .addIntegerOption(option => option.setName("chips")
+        .setDescription("The amount of chips to take.")
+        .setMinValue(1)
+        .setRequired(true)
+      )
+    )
     .addSubcommand(subcommand => subcommand.setName("item")
       .setDescription("Take an item from a user.")
       .addUserOption(option => option.setName("user")
@@ -116,6 +128,10 @@ module.exports = {
         .setDescription("The amount of points to take.")
         .setMinValue(1)
       )
+      .addIntegerOption(option => option.setName("chips")
+        .setDescription("The amount of chips to take.")
+        .setMinValue(1)
+      )
       .addStringOption(option => option.setName("item")
         .setDescription("The item to remove.")
         .setAutocomplete(true)
@@ -141,6 +157,10 @@ module.exports = {
       )
       .addIntegerOption(option => option.setName("points")
         .setDescription("The amount of points to take.")
+        .setMinValue(1)
+      )
+      .addIntegerOption(option => option.setName("chips")
+        .setDescription("The amount of chips to take.")
         .setMinValue(1)
       )
       .addStringOption(option => option.setName("item")
@@ -194,6 +214,8 @@ module.exports = {
       change = {
         money: input.money,
         points: input.points,
+        chips: input.chips,
+
         heat: input.heat,
         reputation: input.reputation,
         statuses: input.status
@@ -210,7 +232,7 @@ module.exports = {
     } else if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
     try {
-      if (["money", "points", "item", "item-list", "from-user"].includes(input.command)) {
+      if (["money", "points", "chips", "item", "item-list", "from-user"].includes(input.command)) {
         await db.users.reload()
         target.profile = profile = db.users.find(row => row.get("user_id") == input.user);
 
@@ -245,6 +267,13 @@ module.exports = {
               color: color(client.config("default_color"))
             })
           }
+          if (change.chips) {
+            embeds.push({
+              description: `<@${profile.get("user_id")}> has lost **${(client.config("casino_chips_format")?.replace("{{CHIPS}}", input.chips) || input.chips)}**!`,
+              color: color(client.config("default_color"))
+            })
+          }
+
           if (change.items) {
             let items = change.items.entries();
 

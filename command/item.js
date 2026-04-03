@@ -41,9 +41,8 @@ module.exports = {
       )
       .addIntegerOption(option => option
         .setName("amount")
-        .setDescription("The amount to use of the item.")
+        .setDescription("The amount to buy of the item.")
         .setMinValue(1)
-        .setMaxValue(100)
       )
     )
     .addSubcommand(subcommand => subcommand
@@ -119,6 +118,9 @@ module.exports = {
 
         if (!item) throw new Error("The specified item could not be found!")
 
+        let onBuy = doOn(item, "BUY");
+        let log = [];
+
         await db.users.reload()
         let profile = db.users.find(row => row.get("user_id") == input.user)
         if (!profile) throw new Error("Your user profile could not be found!")
@@ -177,7 +179,20 @@ module.exports = {
         }
 
         profile.set("money", moneyChange.new)
-        profile.set("inventory", inventory.giveItem(name, amount).toString())
+        log.push(`> **money:** -${moneyChange.deduct} (${moneyChange.old} → ${moneyChange.new})`)
+
+        if (onBuy.convert) {
+          let convert = /(?<curr>[\w-]*)\s?(?<conv>-?\d+)?/m.exec(onBuy.convert).groups,
+            curr = {
+              old: (+profile.get(convert.curr) || 0),
+              change: (+convert.conv || 1) * input.amount
+            }
+          curr.new = curr.old + curr.change;
+          profile.set(convert.curr, curr.new)
+          log.push(`> **${convert.curr}:** ${curr.change >= 0 ? "+" : ""}${curr.change} (${curr.old} → ${curr.new})`)
+        } else {
+          profile.set("inventory", inventory.giveItem(name, amount).toString())
+        }
 
         if (limit.daily) {
           profile.set("daily_limit", daily.giveItem(name, amount).toString())
@@ -199,16 +214,22 @@ module.exports = {
 
         let response = (await input.source.reply({
           content: `Bought **${name} (x${amount}) for ${money(moneyChange.deduct, client)}**!`
-          + (limit.text.length ? "\n" + limit.text.map(x => `-# ${x}`).join("\n") : ""),
+            + (limit.text.length ? "\n" + limit.text.map(x => `-# ${x}`).join("\n") : ""),
           embeds: [itemEmbed(item, client, true)],
           withResponse: true
         }))?.resource?.message
 
-        return await client.log(
+        await client.log(
           `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`
-          + `\n> **money:** -${moneyChange.deduct} (${moneyChange.old} → ${moneyChange.new})`,
+          + log.join("\n"),
           { url: response.url }
         )
+
+        if (onBuy["follow-up"]) {
+          await input.source.followUp(onUse["follow-up"])
+        }
+
+        return
 
       } else if (input.command === "use") {
         let response = (await input.source.deferReply({ withResponse: true }))?.resource?.message,
@@ -217,6 +238,9 @@ module.exports = {
         let item = db.items.data.length ? db.items.find(row => row.get("item_name") == input.item) : []
 
         if (!item) throw new Error("The specified item could not be found!")
+
+        let onUse = doOn(item, "USE");
+        let log = [];
 
         if (item.get("use_cap") === "0") throw new Error("This item is unusable; ping mods if you'd like to toss it!")
 
@@ -263,6 +287,12 @@ module.exports = {
           })
         }
 
+        if (onUse["give-role"]) {
+          let member = await input.source.guild.members.fetch(input.user);
+          member.roles.add(onUse["give-role"]);
+          log.push(`> **give-role:** <@&${onUse["give-role"]}>`)
+        }
+
         if (!item.get("gacha_src")) {
           profile.set("inventory", inventory.toString())
 
@@ -270,7 +300,8 @@ module.exports = {
           await profile.save()
 
           await client.log(
-            `**ITEM USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>`,
+            `**ITEM USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>`
+              + log.length ? "\n" + log.join("\n") : "",
             { url: response.url }
           )
         } else {
@@ -286,6 +317,7 @@ module.exports = {
           let res = {
             money: 0,
             points: 0,
+            chips: 0,
             items: new Inventory()
           },
             list = [],
@@ -299,7 +331,7 @@ module.exports = {
                   ? rangeReplace(input.join("\n"))
                   : "> Yay, money!");
 
-              res.money += parseInt(amt)              
+              res.money += parseInt(amt)
               if (congrats.indexOf("{{REWARD}}") > -1) {
                 list.push(congrats.replace(/{{REWARD}}/g, money(amt, client)))
               } else {
@@ -313,8 +345,23 @@ module.exports = {
                   ? rangeReplace(input.join("\n"))
                   : "> Not bad!"),
                 format = (client.config("event_point_format")?.replace("{{POINTS}}", amt) || `\`${amt} ${client.config("event_point_name")}\``);
-              
+
               res.points += parseInt(amt)
+              if (congrats.indexOf("{{REWARD}}") > -1) {
+                list.push(congrats.replace(/{{REWARD}}/g, format))
+              } else {
+                list.push(format + "\n" + congrats)
+              }
+            },
+            chips(val) {
+              let input = val.split("\n"),
+                amt = input.shift(),
+                congrats = (input.length
+                  ? rangeReplace(input.join("\n"))
+                  : "> Let's go gambling!"),
+                format = (client.config("casino_chips_format")?.replace("{{CHIPS}}", amt) || `\`${amt} chips\``);
+
+              res.chips += parseInt(amt)
               if (congrats.indexOf("{{REWARD}}") > -1) {
                 list.push(congrats.replace(/{{REWARD}}/g, format))
               } else {
@@ -353,7 +400,7 @@ module.exports = {
               list.push([text])
             }
           }
-          
+
 
           for (let i = 0; i < amount * mult; i++) {
             gacha = gacha.filter(item => !["0", 0].includes(item.get("stock")));
@@ -363,7 +410,7 @@ module.exports = {
             if (pull.get("stock") && (!isNaN(pull.get("stock")) && pull.get("stock") != "0")) {
               pull.set("stock", +pull.get("stock") - 1);
               if (pull.get("rate")) pull.set("rate", "")
-              
+
               update.add(pull);
             }
 
@@ -373,16 +420,18 @@ module.exports = {
           for (let entry of update) {
             await entry.save()
           }
-          
+
           let old = {
             money: +profile.get("money") || 0,
-            points: +profile.get("points") || 0
+            points: +profile.get("points") || 0,
+            chips: +profile.get("chips") || 0
           }
 
           if (input.source.replied) throw new Error("Transaction already processed!")
           await profile.assign({
             money: old.money + res.money,
             points: old.points + res.points,
+            chips: old.chips + res.chips,
             inventory: inventory.toString(),
             perma_limit: perma.toString()
           })
@@ -401,18 +450,36 @@ module.exports = {
 
           await client.log(
             `**GACHA USED:** ${name} (x${amount}) by <@${profile.get("user_id")}>\n`
-            + (res.money != 0 ? `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${old.money} → ${old.money + res.money})\n` : "")
-            + (res.points != 0 ? `> **points:** ${res.points > 0 ? "+" : ""}${res.points} (${old.points} → ${old.points + res.points})\n` : "")
-            + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : ""),
+              + (res.money != 0 ? `> **money:** ${res.money > 0 ? "+" : ""}${res.money} (${old.money} → ${old.money + res.money})\n` : "")
+              + (res.points != 0 ? `> **points:** ${res.points > 0 ? "+" : ""}${res.points} (${old.points} → ${old.points + res.points})\n` : "")
+              + (res.chips != 0 ? `> **chips:** ${res.chips > 0 ? "+" : ""}${res.chips} (${old.chips} → ${old.chips + res.chips})\n` : "")
+              + (!res.items.isEmpty() ? res.items.toString().split("\n").map(x => `> ${x}`).join("\n") : "")
+              + log.length ? "\n" + log.join("\n") : "",
             { url: response.url }
           )
         }
 
-        return await input.source.editReply({
+        await input.source.editReply({
           content: `**${name} (x${amount})** used!`
-          + `\n-# You have ${inventory.get(name) || 0} remaining in your inventory.`,
+            + `\n-# You have ${inventory.get(name) || 0} remaining in your inventory.`,
           embeds
         })
+
+        if (onUse["give-role"]) {
+          await input.source.channel.send({
+            content: `<@${input.user}>`,
+            embeds: [{
+              description: `You've gained the <@&${onUse["give-role"]}> role!`,
+              color: color(config("default_color")),
+            }]
+          })
+        }
+
+        if (onUse["follow-up"]) {
+          await input.source.followUp({ content: onUse["follow-up"] })
+        }
+
+        return
       }
     } catch (error) {
       console.log(error);
@@ -496,4 +563,13 @@ function drawGacha(pool) {
       return item
     } else rng -= +item.get("weight")
   }
+}
+
+function doOn(item, on) {
+  if (!item.get("do_on")) return {}
+
+  let res = [...item.get("do_on").matchAll(/^([\w-]*): *([\w-]*): *(.+)/gm)]
+    .filter(x => x[1] == "ON-" + on)
+    .map(x => [x[2], x[3]])
+  return Object.fromEntries(res)
 }

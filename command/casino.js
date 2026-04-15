@@ -137,27 +137,27 @@ module.exports = {
         }
 
         // intro: all reels hidden
-        embeds[1].description = settings.get("reel_intro") + "\n\n"
+        embeds[1].description = settings.get("intro") + "\n\n"
           + `# ${placehold}${placehold}${placehold}`
         input.source.editReply({ embeds })
 
         // 1 reel reveal
         await new Promise(resolve => setTimeout(resolve, +(settings.get("display_delay") || 1) * 1000))
-        embeds[1].description = settings.get("reel_intro") + "\n\n"
+        embeds[1].description = settings.get("intro") + "\n\n"
           + `# ${reels[0]}${placehold}${placehold}`
 
         input.source.editReply({ embeds })
 
         // 2 reel reveal
         await new Promise(resolve => setTimeout(resolve, +(settings.get("display_delay") || 1) * 1000))
-        embeds[1].description = settings.get("reel_intro") + "\n\n"
+        embeds[1].description = settings.get("intro") + "\n\n"
           + `# ${reels[0]}${reels[1]}${placehold}`
 
         input.source.editReply({ embeds })
 
         // 3 reel reveal
         await new Promise(resolve => setTimeout(resolve, +(settings.get("display_delay") || 1) * 1000))
-        embeds[1].description = settings.get("reel_intro") + "\n\n"
+        embeds[1].description = settings.get("intro") + "\n\n"
           + `# ${reels[0]}${reels[1]}${reels[2]}`
 
         input.source.editReply({ embeds })

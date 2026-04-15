@@ -16,7 +16,7 @@ module.exports = {
         .setDescription("...An outside bet. (Higher probability, lower reward.)")
         .addIntegerOption(option => option.setName("bet")
           .setDescription("The number of chips you're betting.")
-          .setMinValue(10)
+          .setMinValue(100)
           .setRequired(true)
         )
         .addStringOption(option => option.setName("wager")
@@ -42,7 +42,7 @@ module.exports = {
         .setDescription("...a single number. (36x bet on win!)")
         .addIntegerOption(option => option.setName("bet")
           .setDescription("The number of chips you're betting.")
-          .setMinValue(10)
+          .setMinValue(100)
           .setRequired(true)
         )
         .addStringOption(option => option.setName("wager")
@@ -56,7 +56,7 @@ module.exports = {
       .setDescription("Single-line LTR slots. Let's go gambling!")
       .addIntegerOption(option => option.setName("bet")
         .setDescription("The number of chips you're betting.")
-        .setMinValue(10)
+        .setMinValue(100)
         .setRequired(true)
       )
     )
@@ -65,7 +65,7 @@ module.exports = {
       .addIntegerOption(option => option.setName("bet")
         .setDescription("The number of chips you're betting.")
         .setMinValue(1)
-        .setMaxValue(50)
+        .setMaxValue(100)
         .setRequired(true)
       )
     )
@@ -311,7 +311,8 @@ module.exports = {
 
       await db.users.reload()
       let user = db.users.find(row => row.get("user_id") === interaction.user.id),
-        bet = +inputs.shift()
+        bet = +inputs.shift(),
+        mult = +(settings.get("win_mult")) || 1
 
       if ((+user.get("chips") || 0) < bet) throw new Error(insertChips(settings.get("not_enough_chips"), user.get("chips"), client))
 
@@ -328,12 +329,12 @@ module.exports = {
           payout = 0;
 
         if (wager == "higher") {
-          if (y > x) payout = 2
-          else if (x == y && match) payout = 2
+          if (y > x) payout = mult
+          else if (x == y && match) payout = mult
           else payout = 0
         } else if (wager == "lower") {
-          if (y < x) payout = 2
-          else if (x == y && match) payout = 2
+          if (y < x) payout = mult
+          else if (x == y && match) payout = mult
           else payout = 0
         }
 

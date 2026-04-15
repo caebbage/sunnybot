@@ -126,7 +126,7 @@ module.exports = {
           { sender: input.source.user.id, url: response.url }
         )
 
-        embeds[0].description = insertChips(settings.get("bet_paid"), input.bet)
+        embeds[0].description = insertChips(settings.get("bet_paid"), input.bet, client)
 
         let reels = [...result.reels];
         for (let i = 0; i < reels.length; i++) {
@@ -171,7 +171,7 @@ module.exports = {
                 result.payout >= 10 ? settings.get("result_win_med") :
                   result.payout > 0 ? settings.get("result_win_small") :
                     settings.get("result_lose"),
-              Math.floor(result.payout * input.bet)),
+              Math.floor(result.payout * input.bet), client),
             color: color(settings.get("embed_color"))
           }]
         })

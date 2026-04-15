@@ -22,18 +22,18 @@ module.exports = {
         .addStringOption(option => option.setName("wager")
           .setDescription("The bet to play.")
           .setChoices(
-            { name: "🟥 Reds (1/2 chance, 2x bet)", value: "red" },
-            { name: "⬛ Blacks (1/2 chance, 2x bet)", value: "black" },
-            { name: "⚪ Odds (1/2 chance, 2x bet)", value: "odd" },
-            { name: "⚫ Evens (1/2 chance, 2x bet)", value: "even" },
-            { name: "⬇️ Lows (1/2 chance, 2x bet)", value: "low" },
-            { name: "⬆️ Highs (1/2 chance, 2x bet)", value: "high" },
-            { name: "1️⃣ First Dozen (1/3 chance, 3x bet)", value: "dozen1" },
-            { name: "2️⃣ Second Dozen (1/3 chance, 3x bet)", value: "dozen2" },
-            { name: "3️⃣ Third Dozen (1/3 chance, 3x bet)", value: "dozen3" },
-            { name: "1️⃣ First Column (1/3 chance, 3x bet)", value: "column1" },
-            { name: "2️⃣ Second Column (1/3 chance, 3x bet)", value: "column2" },
-            { name: "3️⃣ Third Column (1/3 chance, 3x bet)", value: "column3" },
+            { name: "🟥 Reds (1/2 chance, 2x bet)", value: "reds" },
+            { name: "⬛ Blacks (1/2 chance, 2x bet)", value: "blacks" },
+            { name: "⚪ Odds (1/2 chance, 2x bet)", value: "odds" },
+            { name: "⚫ Evens (1/2 chance, 2x bet)", value: "evens" },
+            { name: "⬇️ Lows (1/2 chance, 2x bet)", value: "lows" },
+            { name: "⬆️ Highs (1/2 chance, 2x bet)", value: "highs" },
+            { name: "1️⃣ First Dozen (1/3 chance, 3x bet)", value: "1st dozen" },
+            { name: "2️⃣ Second Dozen (1/3 chance, 3x bet)", value: "2nd dozen" },
+            { name: "3️⃣ Third Dozen (1/3 chance, 3x bet)", value: "3rd dozen" },
+            { name: "1️⃣ First Column (1/3 chance, 3x bet)", value: "1st column" },
+            { name: "2️⃣ Second Column (1/3 chance, 3x bet)", value: "2nd column" },
+            { name: "3️⃣ Third Column (1/3 chance, 3x bet)", value: "3rd column" },
           )
           .setRequired(true)
         )
@@ -211,18 +211,18 @@ module.exports = {
         if (input.source.replied) return // stops command here if it was already replied to
         if (input.command == "outside") {
           switch (input.wager) {
-            case "red": win.push(1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36); break;
-            case "black": win.push(2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35); break;
-            case "odd": win.push(1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35); break;
-            case "even": win.push(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36); break;
-            case "low": win.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18); break;
-            case "high": win.push(19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36); break;
-            case "dozen1": win.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12); break;
-            case "dozen2": win.push(13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24); break;
-            case "dozen3": win.push(25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36); break;
-            case "column1": win.push(1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34); break;
-            case "column2": win.push(2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35); break;
-            case "column3": win.push(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36); break;
+            case "reds": win.push(1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36); break;
+            case "blacks": win.push(2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35); break;
+            case "odds": win.push(1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35); break;
+            case "evens": win.push(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36); break;
+            case "lows": win.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18); break;
+            case "highs": win.push(19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36); break;
+            case "1st dozen": win.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12); break;
+            case "2nd dozen": win.push(13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24); break;
+            case "3rd dozen": win.push(25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36); break;
+            case "1st column": win.push(1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34); break;
+            case "2nd column": win.push(2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35); break;
+            case "3rd column": win.push(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36); break;
             default: throw new Error("Wager not recognized!");
           }
         } else if (input.command == "single") {
@@ -250,7 +250,10 @@ module.exports = {
 
         embeds[0].description = insertChips(settings.get("bet_paid"), input.bet, client)
 
-        embeds[1].description = settings.get("intro");
+        embeds[1].description = settings.get("intro")
+        + "\n\nYou've bet on: `" + input.wager + "`"
+        + (win.length > 1 ? `\n> *Possible wins:* ` + win.join(" ") : "");
+
         embeds[1].thumbnail = { url: settings.get("thumbnail") }
         input.source.editReply({ embeds })
 

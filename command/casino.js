@@ -347,7 +347,7 @@ module.exports = {
         client.log(
           `**CASINO / HIGHER LOWER:** <@${user.get("user_id")}>\n`
           + `> **wager:** ${x}; bet ${wager}\n`
-          + `> **result:** ${x} vs ${y} (${match ? "" : "no "}win on match)\n`
+          + `> **result:** ${x} vs ${y}\n`
           + `> **chips:** ${diff >= 0 ? "+" : ""}${diff} (${old} → ${old + diff})`,
           { sender: interaction.user.id, url: interaction.message.url }
         )
@@ -366,7 +366,7 @@ module.exports = {
           content: `<@${user.get("user_id")}>`,
           embeds: [{
             description: insertChips(
-              payout == 1 ? settings.get("result_tie") :
+              payout == 1 ? settings.get("result_refund") :
               payout > 0 ? settings.get("result_win") :
                 settings.get("result_lose"),
               Math.floor(payout * bet), client),

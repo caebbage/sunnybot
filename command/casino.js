@@ -251,8 +251,8 @@ module.exports = {
         embeds[0].description = insertChips(settings.get("bet_paid"), input.bet, client)
 
         embeds[1].description = settings.get("intro")
-        + "\n\nYou've bet on: `" + input.wager + "`"
-        + (win.length > 1 ? `\n> *Possible wins:* ` + win.join(" ") : "");
+          + "\n\nYou've bet on: `" + input.wager + "`"
+          + (win.length > 1 ? `\n> *Possible wins:* ` + win.join(" ") : "");
 
         embeds[1].thumbnail = { url: settings.get("thumbnail") }
         input.source.editReply({ embeds })
@@ -312,7 +312,8 @@ module.exports = {
       await db.users.reload()
       let user = db.users.find(row => row.get("user_id") === interaction.user.id),
         bet = +inputs.shift(),
-        mult = +(settings.get("win_mult")) || 1
+        mult = +(settings.get("win_mult")) || 1,
+        match = +(settings.get("match_mult")) || 0
 
       if ((+user.get("chips") || 0) < bet) throw new Error(insertChips(settings.get("not_enough_chips"), user.get("chips"), client))
 
@@ -325,17 +326,17 @@ module.exports = {
         const numbers = settings.get("numbers").split(";");
 
         let embeds = interaction.message.embeds,
-          match = settings.get("match_is_win") === "TRUE",
           payout = 0;
 
-        if (wager == "higher") {
-          if (y > x) payout = mult
-          else if (x == y && match) payout = mult
-          else payout = 0
-        } else if (wager == "lower") {
-          if (y < x) payout = mult
-          else if (x == y && match) payout = mult
-          else payout = 0
+        if (y == x) payout = match
+        else {
+          if (wager == "higher") {
+            if (y > x) payout = mult
+            else payout = 0
+          } else if (wager == "lower") {
+            if (y < x) payout = mult
+            else payout = 0
+          }
         }
 
         let old = +user.get("chips");
@@ -365,6 +366,7 @@ module.exports = {
           content: `<@${user.get("user_id")}>`,
           embeds: [{
             description: insertChips(
+              payout == 1 ? settings.get("result_tie") :
               payout > 0 ? settings.get("result_win") :
                 settings.get("result_lose"),
               Math.floor(payout * bet), client),

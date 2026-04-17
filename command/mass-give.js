@@ -107,6 +107,10 @@ module.exports = {
           .setDescription("The amount of Points to give.")
           .setMinValue(1)
         )
+        .addIntegerOption(option => option.setName("chips")
+          .setDescription("The amount of chips to receive.")
+          .setMinValue(1)
+        )
         .addStringOption(option => option.setName("item")
           .setDescription("The item to receive.")
           .setAutocomplete(true)
@@ -130,6 +134,10 @@ module.exports = {
           .setDescription("The amount of Points to give.")
           .setMinValue(1)
         )
+        .addIntegerOption(option => option.setName("chips")
+          .setDescription("The amount of chips to receive.")
+          .setMinValue(1)
+        )
         .addStringOption(option => option.setName("item")
           .setDescription("The item to receive.")
           .setAutocomplete(true)
@@ -138,7 +146,6 @@ module.exports = {
           .setDescription("The number of items to receive.")
           .setMinValue(1)
         )
-
         .addStringOption(option => option
           .setName("item-list")
           .setDescription("A list of multiple items to receive. Format: Item 1 (x1) | Item 2 (x2)")
@@ -163,6 +170,7 @@ module.exports = {
       tags: interaction.options.getString("tags"),
       money: interaction.options.getInteger("money"),
       points: interaction.options.getInteger("points"),
+      chips: interaction.options.getInteger("chips"),
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
       itemList: interaction.options.getString("item-list"),
@@ -173,6 +181,8 @@ module.exports = {
     let change = {
       money: input.money,
       points: input.points,
+      chips: input.chips,
+      
       heat: input.heat,
       reputation: input.reputation,
     }, givingTo, charas = [], users = [];
@@ -185,7 +195,7 @@ module.exports = {
       ).validate(client)
     } else if (input.item) change.items = new Inventory(`${input.item} (x${input.itemAmt || 1})`);
 
-    if (!change.money && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
+    if (!change.money && !change.points && !change.chips && !change.items && !change.heat && !change.reputation && !change.statuses) throw new Error("No changes given.")
 
     try {
       if (input.commandGroup == "charas") {
@@ -296,6 +306,12 @@ module.exports = {
           color: color(client.config("default_color"))
         })
       }
+      if (change.chips) {
+        embeds.push({
+          description: `**${(client.config("casino_chips_format").replace("{{CHIPS}}", input.chips) || input.chips)}** awarded!`,
+          color: color(client.config("default_color"))
+        })
+      }
       if (change.items) {
         let items = change.items.entries();
 
@@ -341,6 +357,8 @@ module.exports = {
 
       let log = {
         money: [],
+        points: [],
+        chips: [],
         heat: [],
         rep: [],
       };
@@ -364,6 +382,12 @@ module.exports = {
               if (l.includes("money")) {
                 log.money.push(`> <@${users[i].get("user_id")}>: ` + /(?<=\()(.+)(?=\))/.exec(l)[0])
               }
+              if (l.includes("points")) {
+                log.points.push(`> <@${users[i].get("user_id")}>: ` + /(?<=\()(.+)(?=\))/.exec(l)[0])
+              }
+              if (l.includes("chips")) {
+                log.chips.push(`> <@${users[i].get("user_id")}>: ` + /(?<=\()(.+)(?=\))/.exec(l)[0])
+              }
             }
           }
         }
@@ -371,7 +395,7 @@ module.exports = {
 
       if (log.money.length) {
         client.log(
-          `**MASS GIVE: ** money`
+          `**MASS GIVE:** money`
           + "\n" + log.money.join("\n"),
           {
             sender: input.source.user.id,
@@ -379,9 +403,32 @@ module.exports = {
           }
         )
       }
+
+      if (log.points.length) {
+        client.log(
+          `**MASS GIVE:** points`
+          + "\n" + log.points.join("\n"),
+          {
+            sender: input.source.user.id,
+            url: endResult?.url
+          }
+        )
+      }
+
+      if (log.chips.length) {
+        client.log(
+          `**MASS GIVE:** chips`
+          + "\n" + log.chips.join("\n"),
+          {
+            sender: input.source.user.id,
+            url: endResult?.url
+          }
+        )
+      }
+      
       if (change.items && !change.items.isEmpty()) {
         client.log(
-          `**MASS GIVE: ** item`
+          `**MASS GIVE:** item`
           + "\n" + change.items?.toString().split("\n").map(x => `> - ${x}`).join("\n")
           + "\n\n" + users.map(x => `<@${x.get("user_id")}>`).filter((v, i) => result[i].success).join(", "),
           {
@@ -393,7 +440,7 @@ module.exports = {
 
       if (log.heat.length) {
         client.log(
-          `**MASS GIVE: ** heat +${change.heat}`
+          `**MASS GIVE:** heat +${change.heat}`
           + "\n" + log.heat.join("\n"),
           {
             sender: input.source.user.id,
@@ -403,7 +450,7 @@ module.exports = {
       }
       if (log.rep.length) {
         client.log(
-          `**MASS GIVE: ** reputation +${change.reputation}`
+          `**MASS GIVE:** reputation +${change.reputation}`
           + "\n" + log.rep.join("\n"),
           {
             sender: input.source.user.id,

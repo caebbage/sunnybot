@@ -165,7 +165,7 @@ module.exports = {
         await new Promise(resolve => setTimeout(resolve, +(settings.get("result_delay") || 1) * 1000))
 
         let ping_mod = result.payout >= (+settings.get("mod_ping_threshold") || 10) 
-        input.source.followUp({
+        input.source.channel.send({
           content: `<@${user.get("user_id")}>` + (ping_mod ? ` <@&${client.config("moderator_role")}>`: ""),
           embeds: [{
             description: insertChips(
@@ -273,7 +273,7 @@ module.exports = {
 
         // result
         await new Promise(resolve => setTimeout(resolve, +(settings.get("result_delay") || 1) * 1000))
-        input.source.followUp({
+        input.source.channel.send({
           content: `<@${user.get("user_id")}>`,
           embeds: [{
             description: insertChips(
@@ -364,7 +364,7 @@ module.exports = {
         interaction.message.edit({ embeds })
 
         await new Promise(resolve => setTimeout(resolve, +(settings.get("result_delay") || 1) * 1000))
-        return interaction.followUp({
+        return interaction.channel.send({
           content: `<@${user.get("user_id")}>`,
           embeds: [{
             description: insertChips(

@@ -163,8 +163,10 @@ module.exports = {
         input.source.editReply({ embeds })
         // result
         await new Promise(resolve => setTimeout(resolve, +(settings.get("result_delay") || 1) * 1000))
+
+        let ping_mod = (+settings.get("mod_ping_threshold") || 10) >= result.payout 
         input.source.followUp({
-          content: `<@${user.get("user_id")}>`,
+          content: `<@${user.get("user_id")}>` + (ping_mod ? ` <@&${client.config("moderator_role")}>`: ""),
           embeds: [{
             description: insertChips(
               result.payout >= 100 ? settings.get("result_win_large") :

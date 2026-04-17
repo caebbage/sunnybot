@@ -220,7 +220,7 @@ module.exports = {
         }))?.resource?.message
 
         await client.log(
-          `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>`
+          `**ITEM BOUGHT:** ${name} x${amount} by <@${profile.get("user_id")}>\n`
           + log.join("\n"),
           { url: response.url }
         )

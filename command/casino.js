@@ -164,7 +164,7 @@ module.exports = {
         // result
         await new Promise(resolve => setTimeout(resolve, +(settings.get("result_delay") || 1) * 1000))
 
-        let ping_mod = (+settings.get("mod_ping_threshold") || 10) >= result.payout 
+        let ping_mod = result.payout >= (+settings.get("mod_ping_threshold") || 10) 
         input.source.followUp({
           content: `<@${user.get("user_id")}>` + (ping_mod ? ` <@&${client.config("moderator_role")}>`: ""),
           embeds: [{

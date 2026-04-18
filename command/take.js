@@ -199,6 +199,7 @@ module.exports = {
 
       money: interaction.options.getInteger("money"),
       points: interaction.options.getInteger("points"),
+      chips: interaction.options.getInteger("chips"),
       item: interaction.options.getString("item"),
       itemAmt: interaction.options.getInteger("item-amt") || 1,
       itemList: interaction.options.getString("item-list"),

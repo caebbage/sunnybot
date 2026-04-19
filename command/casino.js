@@ -73,6 +73,7 @@ module.exports = {
   async parse(interaction) {
     return await this.execute(interaction.client, {
       source: interaction,
+      user: interaction.user.id,
       commandGroup: interaction.options.getSubcommandGroup(),
       command: interaction.options.getSubcommand(),
 
@@ -88,10 +89,17 @@ module.exports = {
 
     try {
       await db.users.reload()
-      let user = db.users.find(row => row.get("user_id") === input.source.user.id)
+      let user = db.users.find(row => row.get("user_id") === input.user)
 
       if (!user) throw new Error("There was a problem finding your user profile! How odd.")
       if ((+user.get("chips") || 0) < input.bet) throw new Error(insertChips(settings.get("not_enough_chips"), user.get("chips"), client))
+
+
+      let cd = client.casino.get(input.user);
+      if (cd && (cd + ((+settings.get("cooldown_duration") || 1) * 1000)) > (new Date()).getTime()) {
+        throw new Error(settings.get("err_cooldown").replace("{{0}}", settings.get("cooldown_duration")))
+      }
+      client.casino.set(input.user, (new Date()).getTime());
 
       const response = (await input.source.deferReply({ withResponse: true }))?.resource?.message;
 
@@ -123,7 +131,7 @@ module.exports = {
           `**CASINO / SLOTS:** <@${user.get("user_id")}>\n`
           + `> **reel:** ${result.reels.join("").replace(/\*/g, "x")}\n`
           + `> **chips:** ${diff >= 0 ? "+" : ""}${diff} (${old} → ${old + diff})`,
-          { sender: input.source.user.id, url: response.url }
+          { sender: input.user, url: response.url }
         )
 
         embeds[0].description = insertChips(settings.get("bet_paid"), input.bet, client)
@@ -246,7 +254,7 @@ module.exports = {
           + `> **wager:** ${input.wager} (${win.join(", ")})\n`
           + `> **result:** ${result.value}\n`
           + `> **chips:** ${diff >= 0 ? "+" : ""}${diff} (${old} → ${old + diff})`,
-          { sender: input.source.user.id, url: response.url }
+          { sender: input.user, url: response.url }
         )
 
 

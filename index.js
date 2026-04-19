@@ -23,6 +23,7 @@ const { Client, Options, Partials, Collection } = require("discord.js"),
 client.commands = new Collection();
 client.slash = {};
 client.customCommands = new Collection();
+client.casino = new Collection();
 
 function reactionCheck(react) {
   let db = client.db?.reactroles;

@@ -327,6 +327,8 @@ module.exports = {
 
       if ((+user.get("chips") || 0) < bet) throw new Error(insertChips(settings.get("not_enough_chips"), user.get("chips"), client))
 
+      client.casino.set(interaction.user.id, (new Date()).getTime());
+
       if (game === "higherlower") {
         let x = +inputs.shift(),
           y = Math.floor(Math.random() * 10 + 1),
